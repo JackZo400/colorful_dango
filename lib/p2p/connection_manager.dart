@@ -22,12 +22,8 @@ class P2PConnectionManager {
 
   P2PConnectionState get state => _state;
 
-  static const _defaultStun = [
-    {'urls': 'stun:stun.l.google.com:19302'},
-    {'urls': 'stun:stun.nextcloud.com:3478'},
-    {'urls': 'stun:stun.voipbuster.com:3478'},
-    {'urls': 'stun:stun.voipstunt.com:3478'},
-  ];
+  static const _defaultStun = <Map<String, dynamic>>[]; // 空=仅局域网 host 候选
+
 
   P2PConnectionManager({List<String>? customStunServers})
       : _iceServers = _buildIceServers(customStunServers);
@@ -156,8 +152,8 @@ class P2PConnectionManager {
       }
     }
     _pc!.onIceGatheringState = handler;
-    Timer(const Duration(seconds: 10), () {
-      if (!completer.isCompleted) completer.complete();
+    Timer(const Duration(seconds: 8), () {
+      if (!completer.isCompleted) { _pc?.onIceGatheringState = null; completer.complete(); }
     });
     await completer.future;
   }
