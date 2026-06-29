@@ -73,7 +73,7 @@ class _HomeScreenState extends State<HomeScreen> {
     actions: [TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('取消')), FilledButton(onPressed: () { Navigator.pop(ctx); _addContact(); }, child: const Text('添加联系人'))]));
 
   void _showAbout() => showDialog(context: context, builder: (ctx) => AlertDialog(
-    title: _colorfulTitle(), content: const Text('加密聊天，安全私密\n无需注册，保护隐私\n\nv1.0.0-alpha'),
+    title: _colorfulTitle(), content: const Text('加密聊天，安全私密\n无需注册，保护隐私\n\n🤖 代码由 AI 生成\n👤 创造者 JackZhao\n\nv1.0.0-alpha'),
     actions: [TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('关闭'))]));
 }
 
