@@ -50,7 +50,7 @@ class _SecureChatAppState extends State<SecureChatApp> {
         brightness: Brightness.dark,
       ),
       themeMode: _dark ? ThemeMode.dark : ThemeMode.light,
-      home: const _AppLoader(),
+      home: _AppLoader(),
       ));
   }
 }

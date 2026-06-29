@@ -2,7 +2,7 @@
 
 安全私密的聊天应用 — 无需注册，全球通用。
 
-A secure & private chat app — no registration, works worldwide.
+[English / 英文文档](README_EN.md)
 
 ---
 
