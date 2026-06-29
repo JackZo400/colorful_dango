@@ -1,67 +1,49 @@
 # 🍡 三彩丸子 / Colorful Dango
 
-加密聊天应用 — 安全、私密、跨平台。
+安全私密的聊天应用 — 无需注册，全球通用。
 
-A secure private chat app — cross-platform, no registration needed.
+A secure & private chat app — no registration, works worldwide.
 
 ---
 
 ## 📥 下载 / Download
 
-| 平台 | 链接 |
+👉 [最新版本 / Latest Release](https://github.com/JackZo400/colorful_dango/releases/latest)
+
+| 平台 | 文件 |
 |------|------|
-| Android | [APK](https://github.com/JackZo400/colorful_dango/releases/latest/download/colorful_dango_android.apk) |
-| Windows | [EXE](https://github.com/JackZo400/colorful_dango/releases/latest/download/colorful_dango_windows.exe) |
+| Android | `三彩丸子_v*-alpha_android.apk` |
+| Windows | `三彩丸子_v*-alpha_windows.exe` |
 
 ## ✨ 功能 / Features
 
-- 加密聊天，消息不经过任何服务器
-- 消息撤回、清空聊天记录（双向同步）
-- 联系人保存，退出不丢失
-- 明亮/暗色模式一键切换
-- 跨平台：Windows · Android · Linux
-- 无需注册，无需手机号
-- 支持自建信令服务器实现跨网络连接
+- 🔒 加密聊天，消息不经过服务器
+- ↩️ 消息撤回、清空记录（双向同步）
+- 💾 联系人保存，退出不丢失
+- 🌙 亮色/暗色模式，一键切换
+- 🌐 中/英双语界面
+- 🎨 彩色标题 · 开屏动画
+- ☁️ 支持自建信令服务器
 
-## 🌐 自建信令服务器（可选）
+> Encrypted chat. Messages never touch a server. Recall & clear sync both ways. Dark/light theme. Bilingual UI.
 
-如果你想让不同网络下的设备也能互相发现，需要一台有公网 IP 的 VPS：
+## 🌐 自建服务器
 
 ```bash
-# 1. 上传服务器代码
 scp bin/server.dart root@你的VPS:/root/
-
-# 2. 登录服务器
-ssh root@你的VPS
-
-# 3. 安装 Dart（如果没有）
-apt-get update && apt-get install -y dart
-
-# 4. 运行
+ssh root@你的VPS && apt-get install -y dart
 nohup dart run /root/server.dart > /var/log/dango.log 2>&1 &
-
-# 5. 确认运行中
-cat /var/log/dango.log
-# 应该看到：信号服务器已启动: ws://0.0.0.0:8765
+# 连接 ws://你的VPS地址:8765
 ```
 
-然后在 App 的「添加联系人 → 信令」中输入 `ws://你的VPS地址:8765` 即可。
-
-*信令服务器仅转发连接信息，不存储任何聊天内容或密钥。*
-
-## 🛠 从源码构建 / Build from Source
+## 🛠 构建
 
 ```bash
 git clone https://github.com/JackZo400/colorful_dango.git
-cd colorful_dango
-flutter pub get
-flutter run -d windows    # Windows
-flutter run -d android    # Android  
-flutter run -d linux      # Linux
+cd colorful_dango && flutter pub get
+flutter run -d windows
 ```
 
-需要 Flutter SDK：https://docs.flutter.dev/get-started/install
-
-## 📄 许可 / License
+## 📄 许可
 
 MIT
