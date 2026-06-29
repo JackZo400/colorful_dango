@@ -1,0 +1,33 @@
+name: colorful_dango
+description: 三彩丸子 — E2EE+P2P 私密聊天
+publish_to: 'none'
+version: 1.0.0-alpha
+
+environment:
+  sdk: ^3.4.0
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # --- 加密 ---
+  cryptography: ^2.7.0       # X25519, Ed25519, AES-256-GCM, HKDF
+
+  # --- P2P ---
+  flutter_webrtc: any          # WebRTC DataChannel
+
+  # --- 存储 ---
+  shared_preferences: ^2.2.3  # 本地密钥 + 联系人持久化
+
+  # --- UI ---
+  share_plus: ^10.1.4      # 手机系统分享
+
+  cupertino_icons: ^1.0.8
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^4.0.0
+
+flutter:
+  uses-material-design: true
