@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'crypto/identity.dart';
 import 'screens/home_screen.dart';
+import 'screens/splash_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -163,7 +164,7 @@ class _AppLoaderState extends State<_AppLoader> {
       );
     }
 
-    return HomeScreen(key: ValueKey(_identity!.ed25519PublicKey.hashCode), identity: _identity!);
+    return SplashScreen(child: HomeScreen(key: ValueKey(_identity!.ed25519PublicKey.hashCode), identity: _identity!));
   }
 
   static String _toHex(Uint8List bytes) =>
