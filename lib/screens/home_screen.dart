@@ -33,8 +33,8 @@ class _HomeScreenState extends State<HomeScreen> {
     final cs = Theme.of(context).colorScheme;
     return Scaffold(
       extendBodyBehindAppBar: true,
-      appBar: AppBar(title: const Text('三彩丸子'), centerTitle: true, backgroundColor: Colors.transparent, elevation: 0, actions: [
-        IconButton(icon: const Icon(Icons.dark_mode), tooltip: '深色模式', onPressed: () => SecureChatApp.of(context)?.toggleTheme()),
+      appBar: AppBar(title: _colorfulTitle(), centerTitle: true, backgroundColor: Colors.transparent, elevation: 0, actions: [
+        IconButton(icon: Icon(Theme.of(context).brightness == Brightness.dark ? Icons.light_mode : Icons.dark_mode), tooltip: Theme.of(context).brightness == Brightness.dark ? '亮色模式' : '暗色模式', onPressed: () => SecureChatApp.of(context)?.toggleTheme()),
         IconButton(icon: const Icon(Icons.info_outline), tooltip: '关于', onPressed: _showAbout),
       ]),
       body: Container(decoration: BoxDecoration(gradient: LinearGradient(colors: [cs.primaryContainer.withAlpha(60), cs.surface], begin: Alignment.topCenter, end: Alignment.bottomCenter)),
@@ -71,9 +71,12 @@ class _HomeScreenState extends State<HomeScreen> {
     actions: [TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('取消')), FilledButton(onPressed: () { Navigator.pop(ctx); _addContact(); }, child: const Text('添加联系人'))]));
 
   void _showAbout() => showDialog(context: context, builder: (ctx) => AlertDialog(
-    title: const Text('三彩丸子'), content: const Text('E2EE+P2P 私密聊天\n端到端加密 · 零服务器存储\nv1.0.0-alpha'),
+    title: _colorfulTitle(), content: const Text('加密聊天，安全私密\n无需注册，保护隐私\n\nv1.0.0-alpha'),
     actions: [TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('关闭'))]));
 }
+
+Widget _colorfulTitle() => ShaderMask(shaderCallback: (bounds) => const LinearGradient(colors: [Color(0xFF6C4AB6), Color(0xFFE91E63), Color(0xFFFF9800)]).createShader(bounds),
+    child: const Text('三彩丸子', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white)));
 
 class _IdCard extends StatelessWidget {
   final String fpHex; const _IdCard({required this.fpHex});

@@ -1,43 +1,67 @@
-# 🍡 三彩丸子 (Colorful Dango)
+# 🍡 三彩丸子 / Colorful Dango
 
-E2EE + P2P 私密聊天应用，零服务器存储，端到端加密。
+加密聊天应用 — 安全、私密、跨平台。
 
-## ✨ 特性
-- **端到端加密** — X25519 ECDH + Ed25519 签名 + AES-256-GCM
-- **P2P 直连** — WebRTC DataChannel，消息不经过任何服务器
-- **信令中继** — 可选 WebSocket 中继，跨网络自动连接
-- **局域网发现** — UDP 组播免粘贴（同平台）
-- **消息持久化** — 本地 SharedPreferences 存储，退出不丢
-- **撤回 + 清空** — 双向同步
-- **深色模式** — 一键切换
-- **跨平台** — Windows / Android / Linux
+A secure private chat app — cross-platform, no registration needed.
 
-## 🚀 快速开始
+---
+
+## 📥 下载 / Download
+
+| 平台 | 链接 |
+|------|------|
+| Android | [APK](https://github.com/JackZo400/colorful_dango/releases/latest/download/colorful_dango_android.apk) |
+| Windows | [EXE](https://github.com/JackZo400/colorful_dango/releases/latest/download/colorful_dango_windows.exe) |
+
+## ✨ 功能 / Features
+
+- 加密聊天，消息不经过任何服务器
+- 消息撤回、清空聊天记录（双向同步）
+- 联系人保存，退出不丢失
+- 明亮/暗色模式一键切换
+- 跨平台：Windows · Android · Linux
+- 无需注册，无需手机号
+- 支持自建信令服务器实现跨网络连接
+
+## 🌐 自建信令服务器（可选）
+
+如果你想让不同网络下的设备也能互相发现，需要一台有公网 IP 的 VPS：
+
 ```bash
-git clone https://github.com/yourname/colorful_dango.git
-cd colorful_dango && flutter pub get
-flutter run -d windows   # 或 -d android / -d linux
-```
+# 1. 上传服务器代码
+scp bin/server.dart root@你的VPS:/root/
 
-## 🌐 可选信令服务器
-```bash
-scp bin/server.dart root@your-vps:/root/
-ssh root@your-vps
-apt-get install -y dart
+# 2. 登录服务器
+ssh root@你的VPS
+
+# 3. 安装 Dart（如果没有）
+apt-get update && apt-get install -y dart
+
+# 4. 运行
 nohup dart run /root/server.dart > /var/log/dango.log 2>&1 &
-# 连接 ws://your-vps:8765
+
+# 5. 确认运行中
+cat /var/log/dango.log
+# 应该看到：信号服务器已启动: ws://0.0.0.0:8765
 ```
 
-## 🏗 架构
-```
-Alice ──WebRTC(E2EE)── Bob
-  │                     │
-  └── (可选) 信令中继 ──┘
-```
-信令仅转发 SDP，不存储消息/密钥/任何用户数据。
+然后在 App 的「添加联系人 → 信令」中输入 `ws://你的VPS地址:8765` 即可。
 
-## 📦 技术栈
-Flutter · cryptography · flutter_webrtc · shared_preferences · share_plus
+*信令服务器仅转发连接信息，不存储任何聊天内容或密钥。*
 
-## 📄 许可
+## 🛠 从源码构建 / Build from Source
+
+```bash
+git clone https://github.com/JackZo400/colorful_dango.git
+cd colorful_dango
+flutter pub get
+flutter run -d windows    # Windows
+flutter run -d android    # Android  
+flutter run -d linux      # Linux
+```
+
+需要 Flutter SDK：https://docs.flutter.dev/get-started/install
+
+## 📄 许可 / License
+
 MIT
