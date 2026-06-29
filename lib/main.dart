@@ -5,6 +5,7 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'crypto/identity.dart';
+import 'l10n.dart';
 import 'screens/home_screen.dart';
 import 'screens/splash_screen.dart';
 
@@ -37,7 +38,7 @@ class _SecureChatAppState extends State<SecureChatApp> {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
+    return ListenableBuilder(listenable: L10n.instance, builder: (_, __) => MaterialApp(
       title: '三彩丸子',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
@@ -50,7 +51,7 @@ class _SecureChatAppState extends State<SecureChatApp> {
       ),
       themeMode: _dark ? ThemeMode.dark : ThemeMode.light,
       home: const _AppLoader(),
-    );
+      ));
   }
 }
 
