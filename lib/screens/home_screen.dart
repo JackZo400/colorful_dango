@@ -18,7 +18,8 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   final List<Peer> _peers = []; final IdentityManager _im = IdentityManager();
   String _fpHex = '...';
-  @override void initState() { super.initState(); _load(); }
+  @override void initState() { super.initState(); _load(); L10n.instance.addListener(_onLang); }
+  void _onLang() { if (mounted) setState(() {}); }
 
   Future<void> _load() async {
     final fp = await _im.fingerprint(widget.identity);
