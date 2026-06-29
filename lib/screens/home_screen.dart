@@ -3,6 +3,7 @@ library;
 import 'package:flutter/material.dart';
 import '../main.dart';
 import '../crypto/identity.dart';
+import '../l10n.dart';
 import '../models/peer.dart';
 import '../models/peer_storage.dart';
 import '../p2p/sessions.dart';
@@ -34,6 +35,7 @@ class _HomeScreenState extends State<HomeScreen> {
     return Scaffold(
       extendBodyBehindAppBar: true,
       appBar: AppBar(title: _colorfulTitle(), centerTitle: true, backgroundColor: Colors.transparent, elevation: 0, actions: [
+        IconButton(icon: const Icon(Icons.language), tooltip: 'EN/中', onPressed: () { setState(() => L10n.lang = L10n.lang == AppLang.zh ? AppLang.en : AppLang.zh); }),
         IconButton(icon: Icon(Theme.of(context).brightness == Brightness.dark ? Icons.light_mode : Icons.dark_mode), tooltip: Theme.of(context).brightness == Brightness.dark ? '亮色模式' : '暗色模式', onPressed: () => SecureChatApp.of(context)?.toggleTheme()),
         IconButton(icon: const Icon(Icons.info_outline), tooltip: '关于', onPressed: _showAbout),
       ]),
