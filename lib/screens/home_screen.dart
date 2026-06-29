@@ -1,5 +1,4 @@
 library;
-
 import 'package:flutter/material.dart';
 import '../main.dart';
 import '../crypto/identity.dart';
@@ -17,10 +16,8 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  final List<Peer> _peers = [];
-  final IdentityManager _im = IdentityManager();
-  String _fpHex = '加载中...';
-
+  final List<Peer> _peers = []; final IdentityManager _im = IdentityManager();
+  String _fpHex = '...';
   @override void initState() { super.initState(); _load(); }
 
   Future<void> _load() async {
@@ -29,25 +26,25 @@ class _HomeScreenState extends State<HomeScreen> {
     if (mounted) setState(() { _fpHex = fp.map((b) => b.toRadixString(16).padLeft(2, '0')).join(':').toUpperCase(); _peers.addAll(saved); });
   }
 
+  final l = L10n.instance;
+
   @override
-  Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    return Scaffold(
-      extendBodyBehindAppBar: true,
+  Widget build(BuildContext cx) {
+    final cs = Theme.of(cx).colorScheme;
+    return Scaffold(extendBodyBehindAppBar: true,
       appBar: AppBar(title: _colorfulTitle(), centerTitle: true, backgroundColor: Colors.transparent, elevation: 0, actions: [
-        IconButton(icon: Text(L10n.instance.lang == AppLang.zh ? '中' : 'EN', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)), tooltip: '语言', onPressed: () { L10n.instance.toggle(); }),
-        IconButton(icon: Icon(Theme.of(context).brightness == Brightness.dark ? Icons.light_mode : Icons.dark_mode), tooltip: Theme.of(context).brightness == Brightness.dark ? '亮色模式' : '暗色模式', onPressed: () => SecureChatApp.of(context)?.toggleTheme()),
-        IconButton(icon: const Icon(Icons.info_outline), tooltip: '关于', onPressed: _showAbout),
+        IconButton(icon: Text(l.lang == AppLang.zh ? '中' : 'EN', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)), onPressed: () => l.toggle()),
+        IconButton(icon: Icon(Theme.of(cx).brightness == Brightness.dark ? Icons.light_mode : Icons.dark_mode), onPressed: () => SecureChatApp.of(cx)?.toggleTheme()),
+        IconButton(icon: const Icon(Icons.info_outline), onPressed: _showAbout),
       ]),
       body: Container(decoration: BoxDecoration(gradient: LinearGradient(colors: [cs.primaryContainer.withAlpha(60), cs.surface], begin: Alignment.topCenter, end: Alignment.bottomCenter)),
         child: SafeArea(child: Column(children: [
-        _IdCard(fpHex: _fpHex),
-        const Divider(height: 1),
+        _IdCard(fpHex: _fpHex), const Divider(height: 1),
         Expanded(child: _peers.isEmpty
           ? Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
               Icon(Icons.people_outline, size: 64, color: cs.outline), const SizedBox(height: 16),
-              Text('暂无联系人', style: Theme.of(context).textTheme.titleMedium?.copyWith(color: cs.outline)),
-              const SizedBox(height: 4), Text('点击下方按钮开始', style: Theme.of(context).textTheme.bodySmall?.copyWith(color: cs.outline))]))
+              Text(l.get('no_contacts'), style: Theme.of(cx).textTheme.titleMedium?.copyWith(color: cs.outline)),
+              const SizedBox(height: 4), Text(l.get('tap_to_start'), style: Theme.of(cx).textTheme.bodySmall?.copyWith(color: cs.outline))]))
           : ListView(padding: const EdgeInsets.only(bottom: 80), children: _peers.map((p) => Dismissible(
               key: ValueKey(p.id), direction: DismissDirection.endToStart,
               onDismissed: (_) { PeerStorage.remove(p.id); Sessions.remove(p); setState(() => _peers.remove(p)); },
@@ -55,11 +52,11 @@ class _HomeScreenState extends State<HomeScreen> {
               child: ListTile(
                 leading: CircleAvatar(backgroundColor: cs.primary, child: Text(p.shortFingerprint.substring(0, 2), style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold))),
                 title: Text(p.displayName, style: const TextStyle(fontFamily: 'monospace', fontSize: 14)),
-                subtitle: Text(Sessions.isOnline(p) ? '在线' : '离线', style: TextStyle(color: Sessions.isOnline(p) ? Colors.green : Colors.grey, fontSize: 12)),
+                subtitle: Text(Sessions.isOnline(p) ? l.get('online') : l.get('offline'), style: TextStyle(color: Sessions.isOnline(p) ? Colors.green : Colors.grey, fontSize: 12)),
                 trailing: const Icon(Icons.chevron_right),
-                onTap: () { final s = Sessions.get(p); if (s != null && s.isReady) { Navigator.push(context, MaterialPageRoute(builder: (_) => ChatScreen(peer: p, session: s))); } else { _reconnect(p); } }))).toList())),
+                onTap: () { final s = Sessions.get(p); if (s != null && s.isReady) { Navigator.push(cx, MaterialPageRoute(builder: (_) => ChatScreen(peer: p, session: s))); } else { _reconnect(p); } }))).toList())),
       ]))),
-      floatingActionButton: FloatingActionButton.extended(onPressed: _addContact, icon: const Icon(Icons.person_add), label: const Text('添加联系人')),
+      floatingActionButton: FloatingActionButton.extended(onPressed: _addContact, icon: const Icon(Icons.person_add), label: Text(l.get('add_contact'))),
     );
   }
 
@@ -69,24 +66,23 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _reconnect(Peer p) => showDialog(context: context, builder: (ctx) => AlertDialog(
-    title: const Text('重新连接'), content: Text('${p.displayName}\n\n连接到同一信令服务器或通过手动方式重新连接。'),
-    actions: [TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('取消')), FilledButton(onPressed: () { Navigator.pop(ctx); _addContact(); }, child: const Text('添加联系人'))]));
+    title: Text(l.get('reconnect')), content: Text('${p.displayName}\n\n${l.get('reconnect_msg')}'),
+    actions: [TextButton(onPressed: () => Navigator.pop(ctx), child: Text(l.get('cancel'))), FilledButton(onPressed: () { Navigator.pop(ctx); _addContact(); }, child: Text(l.get('add_contact')))]));
 
-  void _showAbout() => showDialog(context: context, builder: (ctx) => AlertDialog(
-    title: _colorfulTitle(), content: const Text('加密聊天，安全私密\n无需注册，保护隐私\n\n🤖 代码由 AI 生成\n👤 创造者 JackZhao\n\nv1.0.0-alpha'),
-    actions: [TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('关闭'))]));
-}
+  void _showAbout() => showDialog(context: context, builder: (ctx) => AlertDialog(title: _colorfulTitle(),
+    content: Text(l.get('about_content')), actions: [TextButton(onPressed: () => Navigator.pop(ctx), child: Text(l.get('close')))]));
 
-Widget _colorfulTitle() => ShaderMask(shaderCallback: (bounds) => const LinearGradient(colors: [Color(0xFF6C4AB6), Color(0xFFE91E63), Color(0xFFFF9800)]).createShader(bounds),
+  Widget _colorfulTitle() => ShaderMask(shaderCallback: (b) => const LinearGradient(colors: [Color(0xFF6C4AB6), Color(0xFFE91E63), Color(0xFFFF9800)]).createShader(b),
     child: const Text('三彩丸子', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white)));
+}
 
 class _IdCard extends StatelessWidget {
   final String fpHex; const _IdCard({required this.fpHex});
-  @override Widget build(BuildContext context) => Container(width: double.infinity, padding: const EdgeInsets.all(16),
-    color: Theme.of(context).colorScheme.primaryContainer,
+  @override Widget build(BuildContext cx) => Container(width: double.infinity, padding: const EdgeInsets.all(16),
+    color: Theme.of(cx).colorScheme.primaryContainer,
     child: Column(children: [
-      Icon(Icons.fingerprint, size: 36, color: Theme.of(context).colorScheme.onPrimaryContainer),
-      const SizedBox(height: 4), Text('身份指纹', style: TextStyle(color: Theme.of(context).colorScheme.onPrimaryContainer, fontSize: 11)),
-      const SizedBox(height: 2), SelectableText(fpHex, style: TextStyle(fontSize: 14, fontFamily: 'monospace', fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.onPrimaryContainer)),
+      Icon(Icons.fingerprint, size: 36, color: Theme.of(cx).colorScheme.onPrimaryContainer),
+      const SizedBox(height: 4), Text(L10n.instance.get('fingerprint'), style: TextStyle(color: Theme.of(cx).colorScheme.onPrimaryContainer, fontSize: 11)),
+      const SizedBox(height: 2), SelectableText(fpHex, style: TextStyle(fontSize: 14, fontFamily: 'monospace', fontWeight: FontWeight.bold, color: Theme.of(cx).colorScheme.onPrimaryContainer)),
     ]));
 }
