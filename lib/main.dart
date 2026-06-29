@@ -165,7 +165,7 @@ class _AppLoaderState extends State<_AppLoader> {
       );
     }
 
-    return SplashScreen(child: HomeScreen(key: ValueKey(_identity!.ed25519PublicKey.hashCode), identity: _identity!));
+    return SplashScreen(child: HomeScreen(key: ValueKey('${_identity!.ed25519PublicKey.hashCode}_${L10n.instance.lang}'), identity: _identity!));
   }
 
   static String _toHex(Uint8List bytes) =>
