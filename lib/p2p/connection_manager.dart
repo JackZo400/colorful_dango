@@ -124,7 +124,6 @@ class P2PConnectionManager {
         if (_state != P2PConnectionState.connected) _setState(P2PConnectionState.failed);
       }
     };
-    };
 
     _pc!.onConnectionState = (state) {
       if (state == RTCPeerConnectionState.RTCPeerConnectionStateFailed) {
