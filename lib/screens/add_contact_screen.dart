@@ -1,6 +1,7 @@
 /// 添加联系人 — 信令 / 局域网 / 手动 (双语)
 library;
 
+import 'dart:async';
 import 'dart:io' show Platform;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -212,13 +213,15 @@ class _ManualTabState extends State<_ManualTab> {
   @override void dispose() { _pasteCtrl.dispose(); super.dispose(); }
 
   Future<void> _createOffer() async { setState(() => _loading = true);
-    try { _shareData = await _session!.createOffer(); setState(() => _loading = false); } catch (_) { _init(); setState(() => _loading = false); }}
+    try { _shareData = await _session!.createOffer(); Clipboard.setData(ClipboardData(text: _shareData!)); setState(() => _loading = false); } catch (_) { _init(); setState(() => _loading = false); }}
 
   Future<void> _handleOffer(String data) async { if (data.trim().isEmpty) return; setState(() => _loading = true);
-    try { _shareData = await _session!.createAnswer(data.trim()); setState(() => _loading = false); } catch (_) { _init(); setState(() => _loading = false); }}
+    try { _shareData = await _session!.createAnswer(data.trim()); Clipboard.setData(ClipboardData(text: _shareData!)); setState(() => _loading = false); } catch (_) { _init(); setState(() => _loading = false); }}
 
   Future<void> _submitAnswer() async { final d = _pasteCtrl.text.trim(); if (d.isEmpty) return; setState(() => _loading = true);
-    try { await _session!.acceptAnswer(d); } catch (_) { if (mounted) setState(() => _loading = false); }}
+    // 30s timeout
+    Timer? t; t = Timer(const Duration(seconds: 30), () { if (mounted) { setState(() => _loading = false); ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(L10n.instance.get('connect_failed')), backgroundColor: Colors.red)); }});
+    try { await _session!.acceptAnswer(d); t.cancel(); } catch (_) { t.cancel(); if (mounted) setState(() => _loading = false); }}
 
   @override Widget build(BuildContext context) {
     final l = L10n.instance;
