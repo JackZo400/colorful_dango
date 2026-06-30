@@ -45,6 +45,7 @@ class P2PConnectionManager {
     _setupDataChannel(_dataChannel!);
     final offer = await _pc!.createOffer();
     await _pc!.setLocalDescription(offer);
+    await _waitForIceGathering();
     _setState(P2PConnectionState.connecting);
     final desc = await _pc!.getLocalDescription();
     if (desc == null) throw StateError('无法获取本地 SDP');
@@ -63,6 +64,7 @@ class P2PConnectionManager {
     await _pc!.setRemoteDescription(RTCSessionDescription(remoteOfferSdp, 'offer'));
     final answer = await _pc!.createAnswer();
     await _pc!.setLocalDescription(answer);
+    await _waitForIceGathering();
     _setState(P2PConnectionState.connecting);
     final desc = await _pc!.getLocalDescription();
     if (desc == null) throw StateError('无法获取本地 SDP');
@@ -134,6 +136,15 @@ class P2PConnectionManager {
       }
     };
     // onStateChanged might not exist; use onDataChannelState instead
+  }
+
+  Future<void> _waitForIceGathering() async {
+    final pc = _pc; if (pc == null) return;
+    if (pc.iceGatheringState == RTCIceGatheringState.RTCIceGatheringStateComplete) return;
+    final c = Completer<void>();
+    pc.onIceGatheringState = (s) { if (s == RTCIceGatheringState.RTCIceGatheringStateComplete && !c.isCompleted) c.complete(); };
+    Timer(const Duration(seconds: 3), () { if (!c.isCompleted) c.complete(); });
+    await c.future;
   }
 
   void _setState(P2PConnectionState s) {
