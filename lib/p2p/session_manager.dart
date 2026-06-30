@@ -111,7 +111,7 @@ class SecureSession {
   Future<void> sendTextMessage(String id, String text) async {
     if (_sharedSecret == null) throw StateError('会话未就绪');
     final ct = await _symmetric.encrypt(sharedSecret: _sharedSecret!, plaintext: Uint8List.fromList(utf8.encode('MSG|$id|$text')));
-    _p2p.sendMessage(ct);
+    await _p2p.sendMessage(ct);
   }
 
   void _handleP2PMessage(Uint8List encrypted) {
@@ -136,13 +136,13 @@ class SecureSession {
   Future<void> sendDeleteRequest(String messageId) async {
     if (_sharedSecret == null) return;
     final ct = await _symmetric.encrypt(sharedSecret: _sharedSecret!, plaintext: Uint8List.fromList(utf8.encode('__DEL__|$messageId')));
-    _p2p.sendMessage(ct);
+    await _p2p.sendMessage(ct);
   }
 
   Future<void> sendClearRequest() async {
     if (_sharedSecret == null) return;
     final ct = await _symmetric.encrypt(sharedSecret: _sharedSecret!, plaintext: Uint8List.fromList(utf8.encode('__CLR__')));
-    _p2p.sendMessage(ct);
+    await _p2p.sendMessage(ct);
   }
 
   void _handleP2PStateChange(P2PConnectionState state) {

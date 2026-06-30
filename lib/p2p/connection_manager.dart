@@ -75,12 +75,17 @@ class P2PConnectionManager {
 
   // ─── 消息 ──────────────────────────────────────────────
 
-  void sendMessage(Uint8List encryptedMessage) {
+  Future<void> sendMessage(Uint8List encryptedMessage) async {
     final ch = _dataChannel ?? _remoteDataChannel;
-    if (ch == null || ch.state != RTCDataChannelState.RTCDataChannelOpen) {
-      throw StateError('DataChannel 未就绪');
+    // Wait up to 5 seconds for channel to open
+    for (int i = 0; i < 25; i++) {
+      if (ch != null && ch.state == RTCDataChannelState.RTCDataChannelOpen) {
+        ch.send(RTCDataChannelMessage.fromBinary(encryptedMessage));
+        return;
+      }
+      await Future.delayed(const Duration(milliseconds: 200));
     }
-    ch.send(RTCDataChannelMessage.fromBinary(encryptedMessage));
+    throw StateError('DataChannel 未就绪 (timeout)');
   }
 
   // ─── 生命周期 ──────────────────────────────────────────
