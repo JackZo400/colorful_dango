@@ -140,7 +140,12 @@ class P2PConnectionManager {
         onMessageReceived!(message.binary);
       }
     };
-    // onStateChanged might not exist; use onDataChannelState instead
+    channel.onDataChannelState = (state) {
+      debugPrint('[P2P] DataChannel state: $state');
+      if (state == RTCDataChannelState.RTCDataChannelOpen) {
+        _setState(P2PConnectionState.connected);
+      }
+    };
   }
 
   Future<void> _waitForIceGathering() async {
