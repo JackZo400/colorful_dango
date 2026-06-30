@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:share_plus/share_plus.dart';
 import '../crypto/identity.dart';
+import '../l10n.dart';
 import '../models/peer.dart';
 import '../models/peer_storage.dart';
 import '../p2p/session_manager.dart';
@@ -31,10 +32,10 @@ class _AddContactScreenState extends State<AddContactScreen> with SingleTickerPr
 
   @override
   Widget build(BuildContext context) => Scaffold(
-    appBar: AppBar(title: const Text('添加联系人'), bottom: TabBar(controller: _tab, tabs: const [
-      Tab(icon: Icon(Icons.cloud), text: '信令'),
-      Tab(icon: Icon(Icons.wifi), text: '局域网'),
-      Tab(icon: Icon(Icons.keyboard), text: '手动'),
+    appBar: AppBar(title: Text(L10n.instance.get('add_contact')), bottom: TabBar(controller: _tab, tabs: [
+      Tab(icon: const Icon(Icons.cloud), text: L10n.instance.get('signal_tab')),
+      Tab(icon: const Icon(Icons.wifi), text: L10n.instance.get('lan_tab')),
+      Tab(icon: const Icon(Icons.keyboard), text: L10n.instance.get('manual_tab')),
     ])),
     body: TabBarView(controller: _tab, children: [
       _SignalTab(identity: widget.identity, onDone: (p) => Navigator.pop(context, p)),
