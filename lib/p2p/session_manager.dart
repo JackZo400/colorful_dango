@@ -68,7 +68,7 @@ class SecureSession {
       _setPhase(SessionPhase.failed);
       throw StateError('签名验证失败');
     }
-    await _p2p.setRemoteAnswer(String.fromCharCodes(answerHandshake.sdp));
+    // 先设 peer 和 secret，再 setRemote (防止 ICE 竞态)
     final r = await _keyExchange.deriveSharedSecret(
       myX25519PrivateKey: _myX25519Private!,
       myX25519PublicKey: _myX25519Public!,
@@ -77,6 +77,7 @@ class SecureSession {
     );
     _sharedSecret = r.sharedSecret;
     _peer = _makePeer(answerHandshake.ed25519PublicKey, r.peerFingerprint);
+    await _p2p.setRemoteAnswer(String.fromCharCodes(answerHandshake.sdp));
   }
 
   // ─── Bob: 响应连接 ─────────────────────────────────

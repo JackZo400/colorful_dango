@@ -7,6 +7,7 @@ import '../models/peer.dart';
 import '../models/peer_storage.dart';
 import '../p2p/sessions.dart';
 import 'add_contact_screen.dart';
+import 'connect_screen.dart';
 import 'chat_screen.dart';
 
 class HomeScreen extends StatefulWidget {

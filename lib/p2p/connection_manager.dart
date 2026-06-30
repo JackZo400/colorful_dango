@@ -3,6 +3,7 @@ library;
 
 import 'dart:async';
 import 'dart:typed_data';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_webrtc/flutter_webrtc.dart';
 
 enum P2PConnectionState { disconnected, connecting, connected, failed }
@@ -106,13 +107,16 @@ class P2PConnectionManager {
       'iceTransportPolicy': 'all',
     };
     _pc = await createPeerConnection(config);
+    debugPrint('[P2P] _init done, STUN: ${_iceServers.length} servers');
 
     _pc!.onDataChannel = (channel) {
+      debugPrint('[P2P] remote DataChannel received');
       _remoteDataChannel = channel;
       _setupDataChannel(channel);
     };
 
     _pc!.onIceConnectionState = (state) {
+      debugPrint('[P2P] ICE: $state');
       if (state == RTCIceConnectionState.RTCIceConnectionStateConnected ||
           state == RTCIceConnectionState.RTCIceConnectionStateCompleted) {
         _setState(P2PConnectionState.connected);
