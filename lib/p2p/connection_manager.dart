@@ -117,13 +117,10 @@ class P2PConnectionManager {
 
     _pc!.onIceConnectionState = (state) {
       debugPrint('[P2P] ICE: $state');
-      if (state == RTCIceConnectionState.RTCIceConnectionStateConnected ||
-          state == RTCIceConnectionState.RTCIceConnectionStateCompleted) {
-        _setState(P2PConnectionState.connected);
-      } else if (state == RTCIceConnectionState.RTCIceConnectionStateFailed) {
-        _setState(P2PConnectionState.failed);
+      if (state == RTCIceConnectionState.RTCIceConnectionStateFailed) {
+        if (_state != P2PConnectionState.connected) _setState(P2PConnectionState.failed);
       } else if (state == RTCIceConnectionState.RTCIceConnectionStateDisconnected) {
-        _setState(P2PConnectionState.disconnected);
+        // DataChannel might still work - don't override connected
       }
     };
 
