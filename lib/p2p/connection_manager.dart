@@ -8,7 +8,7 @@ import 'package:flutter_webrtc/flutter_webrtc.dart';
 class P2PConnection {
   RTCPeerConnection? _pc;
   RTCDataChannel? _dc;
-  final Completer<void> _ready = Completer<void>();
+  Completer<void> _ready = Completer<void>();
   void Function(Uint8List)? onMessage;
   void Function()? onClose;
 
@@ -60,6 +60,7 @@ class P2PConnection {
     try { await _dc?.close(); } catch (_) {}
     try { await _pc?.close(); } catch (_) {}
     _dc = null; _pc = null;
+    _ready = Completer<void>(); // 新连接必须重置
   }
 
   // ─── 内部 ───
