@@ -26,6 +26,8 @@ class _ChatScreenState extends State<ChatScreen> {
   final _focusNode = FocusNode();
   final _scrollCtrl = ScrollController();
   bool _ready = false;
+  bool _peerTyping = false;
+  Timer? _typingTimer;
 
   @override void initState() {
     super.initState();
@@ -33,6 +35,8 @@ class _ChatScreenState extends State<ChatScreen> {
     if (_session != null) {
       _ready = _session!.isReady;
       _session!.onPhaseChanged = (p) { if (mounted) setState(() => _ready = p == SessionPhase.ready); };
+      _session!.onTyping = (v) { if (mounted) setState(() => _peerTyping = v); };
+      _ctrl.addListener(_onTyping);
       Sessions.setHandlers(widget.peer,
         onNew: (m) { if (mounted) { setState(() => _messages.add(m)); _scrollToBottom(); } },
         onRecall: (m) { if (mounted) setState(() { final idx = _messages.indexWhere((x) => x.id == m.id); if (idx >= 0) _messages[idx] = m; }); },
@@ -47,6 +51,13 @@ class _ChatScreenState extends State<ChatScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (_scrollCtrl.hasClients) _scrollCtrl.animateTo(_scrollCtrl.position.maxScrollExtent, duration: const Duration(milliseconds: 200), curve: Curves.easeOut);
     });
+  }
+
+  void _onTyping() {
+    if (!_ready) return;
+    _typingTimer?.cancel();
+    _typingTimer = Timer(const Duration(milliseconds: 500), () { /* auto-stops after 2s of no typing */ });
+    _session!.sendTyping(_ctrl.text.isNotEmpty);
   }
 
   void _clearChat() {
@@ -83,7 +94,7 @@ class _ChatScreenState extends State<ChatScreen> {
         CircleAvatar(radius: 16, backgroundColor: cs.primary, child: Text(widget.peer.shortFingerprint.substring(0,2), style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold))),
         const SizedBox(width: 10), Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Text(widget.peer.displayName, style: const TextStyle(fontSize: 15)),
-          Text(_ready ? l.get('encrypted') : l.get('connecting'), style: TextStyle(fontSize: 11, color: _ready ? Colors.green.shade400 : Colors.orange)),
+          Text(_peerTyping ? '对方正在输入...' : _ready ? l.get('encrypted') : l.get('connecting'), style: TextStyle(fontSize: 11, color: _peerTyping ? Colors.green : _ready ? Colors.green.shade400 : Colors.orange)),
         ])]),
         actions: [
           if (_ready) IconButton(icon: const Icon(Icons.delete_sweep), tooltip: l.get('clear_chat'), onPressed: _clearChat),

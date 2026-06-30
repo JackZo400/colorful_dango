@@ -29,6 +29,7 @@ class SecureSession {
   void Function(Peer)? onPeerConnected;
   void Function(ChatMessage)? onDeleteRequest;
   void Function()? onClearRequest;
+  void Function(bool)? onTyping; // true=typing, false=stopped
   void Function(dynamic)? onPhaseChanged; // 兼容旧代码
   SessionPhase _phase = SessionPhase.idle; // 兼容旧代码
   SessionPhase get phase => _phase;
@@ -116,6 +117,12 @@ class SecureSession {
     await _p2p.send(ct);
   }
 
+  Future<void> sendTyping(bool typing) async {
+    if (_sharedSecret == null) return;
+    final ct = await _symmetric.encrypt(sharedSecret: _sharedSecret!, plaintext: Uint8List.fromList(utf8.encode('__TYP__|${typing ? '1' : '0}')));
+    await _p2p.send(ct);
+  }
+
   void _onP2PMessage(Uint8List encrypted) {
     if (_sharedSecret == null) return;
     _symmetric.decrypt(sharedSecret: _sharedSecret!, encrypted: encrypted).then((pt) {
@@ -129,6 +136,8 @@ class SecureSession {
         onDeleteRequest?.call(ChatMessage.received(text.substring(8)));
       } else if (text == '__CLR__') {
         onClearRequest?.call();
+      } else if (text.startsWith('__TYP__|')) {
+        onTyping?.call(text == '__TYP__|1');
       }
     }).catchError((_) {});
   }
