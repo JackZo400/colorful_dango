@@ -22,8 +22,9 @@ class P2PConnectionManager {
 
   P2PConnectionState get state => _state;
 
-  static const _defaultStun = <Map<String, dynamic>>[]; // 空=仅局域网 host 候选
-
+  static const _defaultStun = [
+    {'urls': 'stun:stun.l.google.com:19302'},
+  ];
 
   P2PConnectionManager({List<String>? customStunServers})
       : _iceServers = _buildIceServers(customStunServers);
