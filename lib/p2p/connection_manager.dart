@@ -41,8 +41,8 @@ class P2PConnectionManager {
   Future<String> createOffer() async {
     await _init();
     _dataChannel = await _pc!.createDataChannel(
-      'secure_chat',
-      RTCDataChannelInit()..ordered = true..negotiated = false,
+      'chat',
+      RTCDataChannelInit()..negotiated = true..id = 0,
     );
     _setupDataChannel(_dataChannel!);
     final offer = await _pc!.createOffer();
@@ -64,6 +64,12 @@ class P2PConnectionManager {
   Future<String> createAnswer(String remoteOfferSdp) async {
     await _init();
     await _pc!.setRemoteDescription(RTCSessionDescription(remoteOfferSdp, 'offer'));
+    // 协商模式：双方都创建 id=0 的通道
+    _dataChannel = await _pc!.createDataChannel(
+      'chat',
+      RTCDataChannelInit()..negotiated = true..id = 0,
+    );
+    _setupDataChannel(_dataChannel!);
     final answer = await _pc!.createAnswer();
     await _pc!.setLocalDescription(answer);
     await _waitForIceGathering();
@@ -115,9 +121,7 @@ class P2PConnectionManager {
     debugPrint('[P2P] _init done, STUN: ${_iceServers.length} servers');
 
     _pc!.onDataChannel = (channel) {
-      debugPrint('[P2P] remote DataChannel received');
-      _remoteDataChannel = channel;
-      _setupDataChannel(channel);
+      debugPrint('[P2P] remote DataChannel (ignored, using negotiated)');
     };
 
     _pc!.onIceConnectionState = (state) {
