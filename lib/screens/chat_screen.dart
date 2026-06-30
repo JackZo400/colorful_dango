@@ -1,21 +1,22 @@
-/// 聊天页面 — v1.0.0-alpha
+/// 聊天页面 — 双语
 library;
 
 import 'dart:io' show Platform;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/gestures.dart';
+import '../l10n.dart';
 import '../models/message.dart';
 import '../models/peer.dart';
 import '../p2p/session_manager.dart';
 import '../p2p/sessions.dart';
 import '../models/message_store.dart';
+
 class ChatScreen extends StatefulWidget {
   final Peer peer;
   final SecureSession? session;
   const ChatScreen({super.key, required this.peer, this.session});
-  @override
-  State<ChatScreen> createState() => _ChatScreenState();
+  @override State<ChatScreen> createState() => _ChatScreenState();
 }
 
 class _ChatScreenState extends State<ChatScreen> {
@@ -26,8 +27,7 @@ class _ChatScreenState extends State<ChatScreen> {
   final _scrollCtrl = ScrollController();
   bool _ready = false;
 
-  @override
-  void initState() {
+  @override void initState() {
     super.initState();
     _session = widget.session;
     if (_session != null) {
@@ -41,8 +41,7 @@ class _ChatScreenState extends State<ChatScreen> {
     }
   }
 
-  @override
-  void dispose() { _ctrl.dispose(); _focusNode.dispose(); _scrollCtrl.dispose(); super.dispose(); }
+  @override void dispose() { _ctrl.dispose(); _focusNode.dispose(); _scrollCtrl.dispose(); super.dispose(); }
 
   void _scrollToBottom() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -50,45 +49,49 @@ class _ChatScreenState extends State<ChatScreen> {
     });
   }
 
-  void _clearChat() => showDialog(context: context, builder: (ctx) => AlertDialog(
-    title: const Text('清空聊天'), content: const Text('删除双方的所有聊天记录？'),
-    actions: [TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('取消')),
-      FilledButton(onPressed: () { Navigator.pop(ctx); _session?.sendClearRequest(); MessageStore.clear(widget.peer.id); if (mounted) setState(() => _messages.clear()); }, child: const Text('清空'))]));
+  void _clearChat() {
+    final l = L10n.instance;
+    showDialog(context: context, builder: (ctx) => AlertDialog(
+      title: Text(l.get('clear_chat')), content: Text(l.get('clear_confirm')),
+      actions: [TextButton(onPressed: () => Navigator.pop(ctx), child: Text(l.get('cancel'))),
+        FilledButton(onPressed: () { Navigator.pop(ctx); _session?.sendClearRequest(); MessageStore.clear(widget.peer.id); if (mounted) setState(() => _messages.clear()); }, child: Text(l.get('clear')))]));
+  }
 
   void _showPopup(ChatMessage msg, Offset position) {
     if (msg.recalled) return;
+    final l = L10n.instance;
     showMenu(context: context,
       position: RelativeRect.fromLTRB(position.dx, position.dy, position.dx + 1, position.dy + 1),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       items: [
-        PopupMenuItem(child: _menuItem(Icons.copy, '复制'), onTap: () => Clipboard.setData(ClipboardData(text: msg.text))),
-        PopupMenuItem(child: _menuItem(Icons.format_quote, '引用'), onTap: () { _ctrl.text = '「 引用 」${msg.text}\n${_ctrl.text}'; _ctrl.selection = TextSelection.collapsed(offset: 0); _focusNode.requestFocus(); }),
-        if (msg.direction == MessageDirection.sent && !msg.recalled)
-          PopupMenuItem(child: _menuItem(Icons.undo, '撤回', color: Colors.orange), onTap: () { _session?.sendDeleteRequest(msg.id); Sessions.recall(widget.peer, msg); }),
+        PopupMenuItem(child: _menuItem(Icons.copy, l.get('copy')), onTap: () => Clipboard.setData(ClipboardData(text: msg.text))),
+        PopupMenuItem(child: _menuItem(Icons.format_quote, l.get('quote')), onTap: () { _ctrl.text = '\u300C ${l.get('quote')} \u300D${msg.text}\n${_ctrl.text}'; _ctrl.selection = TextSelection.collapsed(offset: 0); _focusNode.requestFocus(); }),
+        if (msg.direction == MessageDirection.sent)
+          PopupMenuItem(child: _menuItem(Icons.undo, l.get('recall'), color: Colors.orange), onTap: () { _session?.sendDeleteRequest(msg.id); Sessions.recall(widget.peer, msg); }),
       ]);
   }
 
   Widget _menuItem(IconData icon, String text, {Color? color}) =>
     ListTile(leading: Icon(icon, size: 20, color: color), title: Text(text, style: color != null ? TextStyle(color: color) : null), dense: true, contentPadding: EdgeInsets.zero);
 
-  @override
-  Widget build(BuildContext context) {
+  @override Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
+    final l = L10n.instance;
     final isDesktop = Platform.isWindows || Platform.isLinux || Platform.isMacOS;
     return Scaffold(
       appBar: AppBar(titleSpacing: 4, title: Row(children: [
         CircleAvatar(radius: 16, backgroundColor: cs.primary, child: Text(widget.peer.shortFingerprint.substring(0,2), style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold))),
         const SizedBox(width: 10), Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Text(widget.peer.displayName, style: const TextStyle(fontSize: 15)),
-          Text(_ready ? '已加密 · 安全' : '连接中...', style: TextStyle(fontSize: 11, color: _ready ? Colors.green.shade400 : Colors.orange)),
+          Text(_ready ? l.get('encrypted') : l.get('connecting'), style: TextStyle(fontSize: 11, color: _ready ? Colors.green.shade400 : Colors.orange)),
         ])]),
         actions: [
-          if (_ready) IconButton(icon: const Icon(Icons.delete_sweep), tooltip: '清空聊天', onPressed: _clearChat),
+          if (_ready) IconButton(icon: const Icon(Icons.delete_sweep), tooltip: l.get('clear_chat'), onPressed: _clearChat),
           if (_ready) const Padding(padding: EdgeInsets.only(right: 8), child: Icon(Icons.lock, color: Colors.green, size: 16)),
         ]),
       body: Column(children: [
         Expanded(child: _messages.isEmpty
-          ? Center(child: Text(_ready ? '发送第一条加密消息' : '等待连接...', style: TextStyle(color: cs.outline)))
+          ? Center(child: Text(_ready ? l.get('first_msg') : l.get('waiting'), style: TextStyle(color: cs.outline)))
           : ListView.builder(controller: _scrollCtrl, padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8), itemCount: _messages.length,
               itemBuilder: (_, i) {
                 final msg = _messages[i];
@@ -108,22 +111,22 @@ class _ChatScreenState extends State<ChatScreen> {
       await Sessions.send(widget.peer, t.trim(), id: id);
       _ctrl.clear(); _focusNode.requestFocus(); _scrollToBottom();
     } catch (e) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('发送失败: $e'), backgroundColor: Colors.red));
+      final l = L10n.instance;
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('${l.get('send_failed')}: $e'), backgroundColor: Colors.red));
     }
   }
 }
 
 class _Bubble extends StatelessWidget {
-  final ChatMessage msg;
-  const _Bubble({required this.msg});
-  @override
-  Widget build(BuildContext context) {
+  final ChatMessage msg; const _Bubble({required this.msg});
+  @override Widget build(BuildContext context) {
     final sent = msg.direction == MessageDirection.sent;
     final cs = Theme.of(context).colorScheme;
+    final l = L10n.instance;
     if (msg.recalled) return Align(alignment: sent ? Alignment.centerRight : Alignment.centerLeft,
       child: Container(margin: const EdgeInsets.only(bottom: 6), padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
         decoration: BoxDecoration(color: cs.surfaceContainerHighest.withAlpha(60), borderRadius: BorderRadius.circular(12)),
-        child: Text(sent ? '你撤回了一条消息' : '对方撤回了一条消息', style: TextStyle(fontSize: 12, color: cs.outline, fontStyle: FontStyle.italic))));
+        child: Text(sent ? l.get('you_recalled') : l.get('peer_recalled'), style: TextStyle(fontSize: 12, color: cs.outline, fontStyle: FontStyle.italic))));
     return Align(alignment: sent ? Alignment.centerRight : Alignment.centerLeft,
       child: Container(margin: const EdgeInsets.only(bottom: 6), padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
         constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.75),
@@ -142,14 +145,14 @@ class _Bubble extends StatelessWidget {
 class _InputBar extends StatelessWidget {
   final TextEditingController ctrl; final FocusNode focusNode; final bool enabled; final void Function(String) onSend;
   const _InputBar({required this.ctrl, required this.focusNode, required this.enabled, required this.onSend});
-  @override
-  Widget build(BuildContext context) {
+  @override Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
+    final l = L10n.instance;
     return Container(padding: const EdgeInsets.fromLTRB(8, 4, 8, 8),
       decoration: BoxDecoration(color: cs.surface, boxShadow: [BoxShadow(color: Colors.black.withAlpha(12), blurRadius: 4, offset: const Offset(0, -1))]),
       child: SafeArea(child: Row(children: [
         Expanded(child: TextField(controller: ctrl, focusNode: focusNode, enabled: enabled,
-          decoration: InputDecoration(hintText: enabled ? '输入消息...' : '等待连接...', filled: true,
+          decoration: InputDecoration(hintText: enabled ? l.get('input_msg') : l.get('waiting'), filled: true,
             fillColor: cs.surfaceContainerHighest.withAlpha(80), border: OutlineInputBorder(borderRadius: BorderRadius.circular(24), borderSide: BorderSide.none),
             contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10)),
           textInputAction: TextInputAction.send, onSubmitted: onSend)),
