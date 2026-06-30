@@ -119,7 +119,8 @@ class SecureSession {
 
   Future<void> sendTyping(bool typing) async {
     if (_sharedSecret == null) return;
-    final ct = await _symmetric.encrypt(sharedSecret: _sharedSecret!, plaintext: Uint8List.fromList(utf8.encode('__TYP__|${typing ? '1' : '0}')));
+    final v = typing ? '1' : '0';
+    final ct = await _symmetric.encrypt(sharedSecret: _sharedSecret!, plaintext: Uint8List.fromList(utf8.encode('__TYP__|$v')));
     await _p2p.send(ct);
   }
 
