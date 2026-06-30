@@ -1,173 +1,94 @@
-/// WebRTC P2P 连接管理器
+/// WebRTC P2P 连接 —— 参考 flutter_webrtc 官方示例重写
 library;
 
 import 'dart:async';
 import 'dart:typed_data';
-import 'package:flutter/foundation.dart';
 import 'package:flutter_webrtc/flutter_webrtc.dart';
 
-enum P2PConnectionState { disconnected, connecting, connected, failed }
-
-typedef OnMessageReceived = void Function(Uint8List data);
-typedef OnStateChanged = void Function(P2PConnectionState state);
-
-class P2PConnectionManager {
+class P2PConnection {
   RTCPeerConnection? _pc;
-  RTCDataChannel? _dataChannel;
-  RTCDataChannel? _remoteDataChannel;
-  final List<Map<String, dynamic>> _iceServers;
+  RTCDataChannel? _dc;
+  final Completer<void> _ready = Completer<void>();
+  void Function(Uint8List)? onMessage;
+  void Function()? onClose;
 
-  P2PConnectionState _state = P2PConnectionState.disconnected;
-  OnMessageReceived? onMessageReceived;
-  OnStateChanged? onStateChanged;
+  bool get isOpen => _dc?.state == RTCDataChannelState.RTCDataChannelOpen;
+  Future<void> get ready => _ready.future;
 
-  P2PConnectionState get state => _state;
-
-  static const _defaultStun = [
-    {'urls': 'stun:stun.l.google.com:19302'},
-  ];
-
-  P2PConnectionManager({List<String>? customStunServers})
-      : _iceServers = _buildIceServers(customStunServers);
-
-  static List<Map<String, dynamic>> _buildIceServers(List<String>? custom) {
-    if (custom != null && custom.isEmpty) return []; // LAN only
-    final urls = custom ?? _defaultStun.map((e) => e['urls'] as String).toList();
-    return urls.map((u) => {'urls': u}).toList();
+  /// 发送消息 — 等通道就绪
+  Future<void> send(Uint8List data) async {
+    await _ready.future;
+    if (_dc?.state != RTCDataChannelState.RTCDataChannelOpen) {
+      await Future.delayed(const Duration(milliseconds: 500));
+    }
+    _dc!.send(RTCDataChannelMessage.fromBinary(data));
   }
 
-  // ─── 发起连接 ──────────────────────────────────────────
-
+  /// 创建 Offer（发起方）
   Future<String> createOffer() async {
-    await _init();
-    _dataChannel = await _pc!.createDataChannel(
-      'chat',
-      RTCDataChannelInit()..negotiated = true..id = 0,
-    );
-    _setupDataChannel(_dataChannel!);
+    await _close();
+    _pc = await createPeerConnection(_iceConfig);
+    _dc = await _pc!.createDataChannel('chat', RTCDataChannelInit());
+    _setupChannel(_dc!);
+
     final offer = await _pc!.createOffer();
     await _pc!.setLocalDescription(offer);
-    await _waitForIceGathering();
-    _setState(P2PConnectionState.connecting);
-    final desc = await _pc!.getLocalDescription();
-    if (desc == null) throw StateError('无法获取本地 SDP');
-    return desc.sdp!;
+    await _gatherCandidates();
+    return (await _pc!.getLocalDescription())!.sdp!;
   }
 
-  Future<void> setRemoteAnswer(String sdp) async {
-    if (_pc == null) throw StateError('请先调用 createOffer()');
-    await _pc!.setRemoteDescription(RTCSessionDescription(sdp, 'answer'));
-  }
-
-  // ─── 响应连接 ──────────────────────────────────────────
-
-  Future<String> createAnswer(String remoteOfferSdp) async {
-    await _init();
-    await _pc!.setRemoteDescription(RTCSessionDescription(remoteOfferSdp, 'offer'));
-    // 协商模式：双方都创建 id=0 的通道
-    _dataChannel = await _pc!.createDataChannel(
-      'chat',
-      RTCDataChannelInit()..negotiated = true..id = 0,
-    );
-    _setupDataChannel(_dataChannel!);
+  /// 接收 Offer 并创建 Answer（应答方）
+  Future<String> createAnswer(String remoteSdp) async {
+    await _close();
+    _pc = await createPeerConnection(_iceConfig);
+    _pc!.onDataChannel = (ch) { _dc = ch; _setupChannel(ch); };
+    await _pc!.setRemoteDescription(RTCSessionDescription(remoteSdp, 'offer'));
     final answer = await _pc!.createAnswer();
     await _pc!.setLocalDescription(answer);
-    await _waitForIceGathering();
-    _setState(P2PConnectionState.connecting);
-    final desc = await _pc!.getLocalDescription();
-    if (desc == null) throw StateError('无法获取本地 SDP');
-    return desc.sdp!;
+    await _gatherCandidates();
+    return (await _pc!.getLocalDescription())!.sdp!;
   }
 
-  // ─── 消息 ──────────────────────────────────────────────
-
-  Future<void> sendMessage(Uint8List encryptedMessage) async {
-    final ch = _dataChannel ?? _remoteDataChannel;
-    // Wait up to 5 seconds for channel to open
-    for (int i = 0; i < 25; i++) {
-      if (ch != null && ch.state == RTCDataChannelState.RTCDataChannelOpen) {
-        ch.send(RTCDataChannelMessage.fromBinary(encryptedMessage));
-        return;
-      }
-      await Future.delayed(const Duration(milliseconds: 200));
-    }
-    throw StateError('DataChannel 未就绪 (timeout)');
+  /// 设置远端 Answer
+  Future<void> setRemoteAnswer(String sdp) async {
+    await _pc?.setRemoteDescription(RTCSessionDescription(sdp, 'answer'));
   }
 
-  // ─── 生命周期 ──────────────────────────────────────────
-
-  Future<void> disconnect() async {
-    try { await _dataChannel?.close(); } catch (_) {}
-    try { await _remoteDataChannel?.close(); } catch (_) {}
+  /// 关闭
+  Future<void> close() => _close();
+  Future<void> _close() async {
+    try { await _dc?.close(); } catch (_) {}
     try { await _pc?.close(); } catch (_) {}
-    _dataChannel = null;
-    _remoteDataChannel = null;
-    _pc = null;
-    _setState(P2PConnectionState.disconnected);
+    _dc = null; _pc = null;
   }
 
-  Future<void> dispose() async => await disconnect();
+  // ─── 内部 ───
 
-  // ─── 内部 ──────────────────────────────────────────────
+  static const _iceConfig = {
+    'iceServers': [
+      {'urls': 'stun:stun.l.google.com:19302'},
+    ],
+    'iceTransportPolicy': 'all',
+  };
 
-  Future<void> _init() async {
-    await disconnect();
-    await Future.delayed(const Duration(milliseconds: 300)); // let native cleanup finish
-    final config = {
-      'iceServers': _iceServers,
-      'iceTransportPolicy': 'all',
-    };
-    _pc = await createPeerConnection(config);
-    debugPrint('[P2P] _init done, STUN: ${_iceServers.length} servers');
-
-    _pc!.onDataChannel = (channel) {
-      debugPrint('[P2P] remote DataChannel (ignored, using negotiated)');
-    };
-
-    _pc!.onIceConnectionState = (state) {
-      debugPrint('[P2P] ICE: $state');
-      if (state == RTCIceConnectionState.RTCIceConnectionStateConnected ||
-          state == RTCIceConnectionState.RTCIceConnectionStateCompleted) {
-        if (_state != P2PConnectionState.connected) _setState(P2PConnectionState.connected);
-      } else if (state == RTCIceConnectionState.RTCIceConnectionStateFailed) {
-        if (_state != P2PConnectionState.connected) _setState(P2PConnectionState.failed);
+  void _setupChannel(RTCDataChannel ch) {
+    ch.onDataChannelState = (s) {
+      if (s == RTCDataChannelState.RTCDataChannelOpen && !_ready.isCompleted) {
+        _ready.complete();
       }
     };
-
-    _pc!.onConnectionState = (state) {
-      if (state == RTCPeerConnectionState.RTCPeerConnectionStateFailed) {
-        if (_state != P2PConnectionState.connected) _setState(P2PConnectionState.failed);
-      }
+    ch.onMessage = (m) {
+      if (m.isBinary && onMessage != null) onMessage!(m.binary);
     };
   }
 
-  void _setupDataChannel(RTCDataChannel channel) {
-    channel.onMessage = (message) {
-      if (message.isBinary && onMessageReceived != null) {
-        onMessageReceived!(message.binary);
-      }
-    };
-    channel.onDataChannelState = (state) {
-      debugPrint('[P2P] DataChannel state: $state');
-      if (state == RTCDataChannelState.RTCDataChannelOpen) {
-        _setState(P2PConnectionState.connected);
-      }
-    };
-  }
-
-  Future<void> _waitForIceGathering() async {
-    final pc = _pc; if (pc == null) return;
-    if (pc.iceGatheringState == RTCIceGatheringState.RTCIceGatheringStateComplete) return;
+  Future<void> _gatherCandidates() async {
+    if (_pc!.iceGatheringState == RTCIceGatheringState.RTCIceGatheringStateComplete) return;
     final c = Completer<void>();
-    pc.onIceGatheringState = (s) { if (s == RTCIceGatheringState.RTCIceGatheringStateComplete && !c.isCompleted) c.complete(); };
-    Timer(const Duration(seconds: 3), () { if (!c.isCompleted) c.complete(); });
+    _pc!.onIceGatheringState = (s) {
+      if (s == RTCIceGatheringState.RTCIceGatheringStateComplete && !c.isCompleted) c.complete();
+    };
+    Timer(const Duration(seconds: 5), () { if (!c.isCompleted) c.complete(); });
     await c.future;
-  }
-
-  void _setState(P2PConnectionState s) {
-    if (_state != s) {
-      _state = s;
-      onStateChanged?.call(s);
-    }
   }
 }
