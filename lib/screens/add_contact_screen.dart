@@ -225,7 +225,7 @@ class _ManualTabState extends State<_ManualTab> {
   void initState() { super.initState(); _init(); }
   void _init() { _session?.dispose(); _session = SecureSession(identity: widget.identity); _session!.onPhaseChanged = (p) { if (mounted) setState(() => _phase = p); }; _session!.onPeerConnected = (peer) async { await PeerStorage.save(peer); Sessions.put(peer, _session!); if (mounted) widget.onDone(peer); }; }
   @override
-  void dispose() { _pasteCtrl.dispose(); _session?.dispose(); super.dispose(); }
+  void dispose() { _pasteCtrl.dispose(); super.dispose(); }
 
   Future<void> _createOffer() async { setState(() => _loading = true);
     try { _shareData = await _session!.createOffer(); setState(() => _loading = false); } catch (_) { _init(); setState(() => _loading = false); }}
