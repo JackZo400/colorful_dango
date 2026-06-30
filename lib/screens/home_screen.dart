@@ -64,8 +64,8 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _addContact() async {
-    final r = await Navigator.push<ConnectionResult>(context, MaterialPageRoute(builder: (_) => ConnectScreen(identity: widget.identity)));
-    if (r != null && mounted) { await PeerStorage.save(r.peer); Sessions.put(r.peer, r.session); setState(() { _peers.removeWhere((p) => p.id == r.peer.id); _peers.add(r.peer); }); Navigator.push(context, MaterialPageRoute(builder: (_) => ChatScreen(peer: r.peer, session: r.session))); }
+    final peer = await Navigator.push<Peer>(context, MaterialPageRoute(builder: (_) => AddContactScreen(identity: widget.identity)));
+    if (peer != null && mounted) { await PeerStorage.save(peer); setState(() { _peers.removeWhere((p) => p.id == peer.id); _peers.add(peer); }); final s = Sessions.get(peer); if (s != null) Navigator.push(context, MaterialPageRoute(builder: (_) => ChatScreen(peer: peer, session: s))); }
   }
 
   void _reconnect(Peer p) => showDialog(context: context, builder: (ctx) => AlertDialog(

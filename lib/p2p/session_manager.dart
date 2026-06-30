@@ -48,6 +48,7 @@ class SecureSession {
     _myX25519Private = result.x25519PrivateKey;
     _myX25519Public = result.x25519PublicKey;
     _encodedPayload = _encode(result.payload.encode());
+    _phase = SessionPhase.offerCreated; onPhaseChanged?.call(_phase);
     return _encodedPayload!;
   }
 
@@ -85,6 +86,7 @@ class SecureSession {
     _sharedSecret = r.sharedSecret;
     _peer = _makePeer(offerHandshake.ed25519PublicKey, r.peerFingerprint);
     _encodedPayload = _encode(result.payload.encode());
+    _phase = SessionPhase.answerCreated; onPhaseChanged?.call(_phase);
     _waitReady();
     return _encodedPayload!;
   }
