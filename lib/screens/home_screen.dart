@@ -60,6 +60,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 trailing: const Icon(Icons.chevron_right),
                 onTap: () { final s = Sessions.get(p); if (s != null && s.isReady) { Navigator.push(cx, MaterialPageRoute(builder: (_) => ChatScreen(peer: p, session: s))); } else { _addContact(); } },
                 onLongPress: () => _rename(p),
+              })).toList())),
       ]))),
       floatingActionButton: FloatingActionButton.extended(onPressed: _addContact, icon: const Icon(Icons.person_add), label: Text(l.get('add_contact'))),
     );
