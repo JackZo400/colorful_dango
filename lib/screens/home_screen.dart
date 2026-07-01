@@ -54,7 +54,7 @@ class _HomeScreenState extends State<HomeScreen> {
               child: ListTile(
                 leading: CircleAvatar(backgroundColor: cs.primary, child: Text(p.shortFingerprint.substring(0, 2), style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold))),
                 title: Text(p.displayName, style: const TextStyle(fontFamily: 'monospace', fontSize: 14)),
-                subtitle: Text(Sessions.isOnline(p) ? l.get('online') : l.get('offline'), style: TextStyle(color: Sessions.isOnline(p) ? Colors.green : Colors.grey, fontSize: 12)),
+                subtitle: Text(Sessions.lastText(p.id) ?? (Sessions.isOnline(p) ? l.get('online') : l.get('offline')), style: TextStyle(color: Sessions.isOnline(p) ? Colors.green : Colors.grey, fontSize: 12), maxLines: 1, overflow: TextOverflow.ellipsis),
                 trailing: const Icon(Icons.chevron_right),
                 onTap: () { final s = Sessions.get(p); if (s != null && s.isReady) { Navigator.push(cx, MaterialPageRoute(builder: (_) => ChatScreen(peer: p, session: s))); } else { _addContact(); } },
                 onLongPress: () => _rename(p),
