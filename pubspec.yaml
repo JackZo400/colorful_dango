@@ -20,7 +20,6 @@ dependencies:
   shared_preferences: ^2.2.3  # 本地密钥 + 联系人持久化
 
   # --- UI ---
-  image_picker: ^1.1.2
   share_plus: ^10.1.4      # 手机系统分享
 
   cupertino_icons: ^1.0.8
