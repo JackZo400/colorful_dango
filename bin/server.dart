@@ -61,7 +61,10 @@ final Map<String, WebSocket> clients = {};
 
 void broadcast(String msg, {WebSocket? except}) {
   final data = utf8.encode(msg);
-  for (final ws in clients.values) {
-    if (ws != except) ws.add(data);
+  final dead = <String>[];
+  for (final e in clients.entries) {
+    if (e.value == except) continue;
+    try { e.value.add(data); } catch (_) { dead.add(e.key); }
   }
+  for (final k in dead) { clients.remove(k); }
 }
