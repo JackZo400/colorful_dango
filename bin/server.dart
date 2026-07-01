@@ -36,6 +36,11 @@ void main() async {
                 final target = parts[1];
                 final sdp = parts.sublist(2).join('|');
                 clients[target]?.add(utf8.encode('ANSWER|${fp}|$sdp'));
+              } else if (msg.startsWith('RELAY|')) {
+                final parts = msg.split('|');
+                final target = parts[1];
+                final data = parts.sublist(2).join('|');
+                clients[target]?.add(utf8.encode('RELAY|${fp}|$data'));
               }
             } catch (_) {}
           },
