@@ -12,7 +12,6 @@ import '../models/peer.dart';
 import '../models/peer_storage.dart';
 import '../p2p/session_manager.dart';
 import '../p2p/sessions.dart';
-import '../p2p/lan_discovery.dart';
 import '../p2p/signaling_client.dart';
 
 class AddContactScreen extends StatefulWidget {
@@ -23,7 +22,7 @@ class AddContactScreen extends StatefulWidget {
 
 class _AddContactScreenState extends State<AddContactScreen> with SingleTickerProviderStateMixin {
   late TabController _tab;
-  @override void initState() { super.initState(); _tab = TabController(length: 3, vsync: this); }
+  @override void initState() { super.initState(); _tab = TabController(length: 2, vsync: this); }
   @override void dispose() { _tab.dispose(); super.dispose(); }
 
   @override Widget build(BuildContext context) {
@@ -31,12 +30,10 @@ class _AddContactScreenState extends State<AddContactScreen> with SingleTickerPr
     return Scaffold(
       appBar: AppBar(title: Text(l.get('add_contact')), bottom: TabBar(controller: _tab, tabs: [
         Tab(icon: const Icon(Icons.cloud), text: l.get('signal_tab')),
-        Tab(icon: const Icon(Icons.wifi), text: l.get('lan_tab')),
         Tab(icon: const Icon(Icons.keyboard), text: l.get('manual_tab')),
       ])),
       body: TabBarView(controller: _tab, children: [
         _SignalTab(identity: widget.identity, onDone: (p) => Navigator.pop(context, p)),
-        _LanTab(identity: widget.identity, onDone: (p) => Navigator.pop(context, p)),
         _ManualTab(identity: widget.identity, onDone: (p) => Navigator.pop(context, p)),
       ]));
   }
@@ -50,7 +47,7 @@ class _SignalTab extends StatefulWidget {
 
 class _SignalTabState extends State<_SignalTab> {
   final _sig = SignalingClient();
-  final _ctrl = TextEditingController(text: SignalingClient.cachedUrl ?? 'ws://');
+  final _ctrl = TextEditingController(text: SignalingClient.cachedUrl ?? 'ws://38.22.90.80:8765');
   final List<DiscoveredPeer> _peers = [];
   bool _on = false, _busy = false;
   String _rawFp = '';
@@ -112,84 +109,6 @@ class _SignalTabState extends State<_SignalTab> {
             leading: const CircleAvatar(backgroundColor: Colors.blue, child: Icon(Icons.person, color: Colors.white, size: 18)),
             title: Text(dp.fingerprint, style: const TextStyle(fontFamily: 'monospace', fontSize: 14)),
             trailing: _busy && _peers.first == dp ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(strokeWidth: 2)) : FilledButton.tonal(child: Text(l.get('connect_btn')), onPressed: () => _connect(dp)))).toList())),
-      ],
-    ]));
-  }
-}
-
-class _LanTab extends StatefulWidget {
-  final CryptoIdentity identity; final void Function(Peer) onDone;
-  const _LanTab({required this.identity, required this.onDone});
-  @override State<_LanTab> createState() => _LanTabState();
-}
-
-class _LanTabState extends State<_LanTab> {
-  final _lan = LanDiscovery();
-  final List<DiscoveredPeer> _peers = [];
-  bool _on = false, _busy = false;
-  String _rawFp = '';
-  SecureSession? _pending;
-
-  @override void initState() { super.initState(); _loadFp(); }
-  @override void dispose() { _lan.stop(); super.dispose(); }
-
-  Future<void> _loadFp() async {
-    final fp = await IdentityManager().fingerprint(widget.identity);
-    if (mounted) setState(() => _rawFp = fp.map((b) => b.toRadixString(16).padLeft(2, '0')).join(''));
-  }
-
-  void _toggle() {
-    setState(() => _on = true);
-    _lan.start(_rawFp).then((ok) {
-      if (!ok || !mounted) { setState(() => _on = false); return; }
-      _lan.onFound.listen((p) { if (mounted && !_peers.any((e) => e.fingerprint == p.fingerprint)) setState(() => _peers.add(p)); });
-      _lan.onData.listen((data) async {
-        if (_pending != null) { try { await _pending!.acceptAnswer(data); } catch (_) {} return; }
-        _accept(data);
-      });
-    }).catchError((_) { if (mounted) setState(() => _on = false); });
-  }
-
-  void _accept(String sdp) async {
-    try {
-      final s = SecureSession(identity: widget.identity);
-      s.onPeerConnected = (peer) async { await PeerStorage.save(peer); await Sessions.put(peer, s); if (mounted) widget.onDone(peer); };
-      final a = await s.createAnswer(sdp);
-      if (mounted) _lan.sendSignaling(a); else s.close();
-    } catch (_) {}
-  }
-
-  void _connect(DiscoveredPeer dp) async {
-    setState(() => _busy = true);
-    _pending = SecureSession(identity: widget.identity);
-    _pending!.onPeerConnected = (peer) async { await PeerStorage.save(peer); await Sessions.put(peer, _pending!); if (mounted) widget.onDone(peer); };
-    try {
-      final o = await _pending!.createOffer();
-      if (mounted) _lan.sendSignaling(o); else { _pending = null; setState(() => _busy = false); }
-    } catch (_) { _pending = null; if (mounted) setState(() => _busy = false); }
-  }
-
-  @override Widget build(BuildContext context) {
-    final l = L10n.instance;
-    return Padding(padding: const EdgeInsets.all(16), child: Column(children: [
-      Card(child: Padding(padding: const EdgeInsets.all(12), child: Row(children: [
-        const Icon(Icons.info_outline, size: 16, color: Colors.grey), const SizedBox(width: 8),
-        Expanded(child: Text(l.get('lan_warning'), style: TextStyle(fontSize: 12, color: Colors.grey.shade600))),
-      ]))),
-      const SizedBox(height: 12),
-      if (!_on)
-        FilledButton.icon(onPressed: _toggle, icon: const Icon(Icons.wifi), label: Text(l.get('start_scan')))
-      else ...[
-        Row(children: [
-          Icon(Icons.wifi, color: Colors.green.shade400, size: 18), const SizedBox(width: 8),
-          Text(l.get('scanning').replaceAll('', ''), style: const TextStyle(fontSize: 13)),
-          const Spacer(), TextButton(onPressed: () { _lan.stop(); setState(() { _on = false; _peers.clear(); }); }, child: Text(l.get('stop')))]),
-        const Divider(),
-        Expanded(child: _peers.isEmpty ? Center(child: Text(l.get('waiting_lan'), style: const TextStyle(color: Colors.grey))) : ListView(
-          children: _peers.map((dp) => ListTile(
-            leading: const CircleAvatar(backgroundColor: Colors.green, child: Icon(Icons.person, color: Colors.white, size: 18)),
-            title: Text(dp.fingerprint, style: const TextStyle(fontFamily: 'monospace', fontSize: 14)),
-            trailing: _busy ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(strokeWidth: 2)) : FilledButton.tonal(child: Text(l.get('connect_btn')), onPressed: () => _connect(dp)))).toList())),
       ],
     ]));
   }
