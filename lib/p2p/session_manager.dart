@@ -29,7 +29,8 @@ class SecureSession {
   void Function(Peer)? onPeerConnected;
   void Function(ChatMessage)? onDeleteRequest;
   void Function()? onClearRequest;
-  void Function(bool)? onTyping; // true=typing, false=stopped
+  void Function(bool)? onTyping;
+  void Function(Uint8List)? onBinaryMessage; // 图片/文件
   void Function(dynamic)? onPhaseChanged; // 兼容旧代码
   SessionPhase _phase = SessionPhase.idle; // 兼容旧代码
   SessionPhase get phase => _phase;
@@ -124,6 +125,14 @@ class SecureSession {
     await _p2p.send(ct);
   }
 
+  Future<void> sendBinary(Uint8List data) async {
+    if (_sharedSecret == null) return;
+    // 格式: IMG|base64
+    final b64 = base64.encode(data);
+    final ct = await _symmetric.encrypt(sharedSecret: _sharedSecret!, plaintext: Uint8List.fromList(utf8.encode('IMG|$b64')));
+    await _p2p.send(ct);
+  }
+
   void _onP2PMessage(Uint8List encrypted) {
     if (_sharedSecret == null) return;
     _symmetric.decrypt(sharedSecret: _sharedSecret!, encrypted: encrypted).then((pt) {
@@ -139,6 +148,9 @@ class SecureSession {
         onClearRequest?.call();
       } else if (text.startsWith('__TYP__|')) {
         onTyping?.call(text == '__TYP__|1');
+      } else if (text.startsWith('IMG|')) {
+        final b64 = text.substring(4);
+        onBinaryMessage?.call(Uint8List.fromList(base64.decode(b64)));
       }
     }).catchError((_) {});
   }
