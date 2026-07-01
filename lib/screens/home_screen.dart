@@ -23,6 +23,7 @@ class _HomeScreenState extends State<HomeScreen> {
   String _fpHex = '...';
   @override void initState() { super.initState(); _load(); L10n.instance.addListener(_onLang); Sessions.onStatusChanged = (id, online) { if (mounted) setState(() {}); }; }
   @override void dispose() { L10n.instance.removeListener(_onLang); super.dispose(); }
+  void _onLang() { if (mounted) setState(() {}); }
 
   Future<void> _load() async {
     final fp = await _im.fingerprint(widget.identity);
