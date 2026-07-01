@@ -8,32 +8,28 @@ class Sessions {
   static final Map<String, _Entry> _map = {};
   static void Function(String id, bool online)? onStatusChanged;
 
-  static void put(Peer peer, SecureSession session) {
+  static Future<void> put(Peer peer, SecureSession session) async {
     final id = peer.id;
     final old = _map[id];
-    // dispose old session, keep messages
-    old?.session.onMessageReceived = null;
-    old?.session.onDeleteRequest = null;
-    old?.session.onClearRequest = null;
-    old?.session.dispose();
+    old?.session.close();
+    
+    // 先加载历史消息，再创建条目，避免竞态
+    final msgs = old != null ? old.messages : await MessageStore.load(id);
     final entry = _Entry(peer: peer, session: session);
+    entry.messages = msgs.toList();
     _map[id] = entry;
-    // reuse messages from old entry, or load from store
-    if (old != null && old.messages.isNotEmpty) {
-      entry.messages = old.messages;
-    } else {
-      MessageStore.load(id).then((msgs) { if (_map[id] == entry) entry.messages = msgs; });
-    }
-    session.onMessageReceived = (m) { entry.messages.add(m); MessageStore.save(id, entry.messages); entry.onNewMessage?.call(m); };
+
+    session.onMessageReceived = (m) { entry.messages.add(m); _save(id, entry); entry.onNewMessage?.call(m); };
     session.onDeleteRequest = (m) {
       final idx = entry.messages.indexWhere((x) => x.id == m.text);
-      if (idx >= 0) { entry.messages[idx] = entry.messages[idx].copyRecalled(); MessageStore.save(id, entry.messages); entry.onRecall?.call(entry.messages[idx]); }
+      if (idx >= 0) { entry.messages[idx] = entry.messages[idx].copyRecalled(); _save(id, entry); entry.onRecall?.call(entry.messages[idx]); }
     };
-    session.onClearRequest = () { entry.messages.clear(); MessageStore.clear(id); entry.onClear?.call(); };
+    session.onClearRequest = () async { entry.messages.clear(); await MessageStore.clear(id); entry.onClear?.call(); };
     session.onPhaseChanged = (p) {
       if (p == SessionPhase.failed || p == SessionPhase.idle) onStatusChanged?.call(id, false);
       if (p == SessionPhase.ready) onStatusChanged?.call(id, true);
     };
+    if (session.isReady) onStatusChanged?.call(id, true);
   }
 
   static SecureSession? get(Peer peer) => _map[peer.id]?.session;
@@ -49,17 +45,21 @@ class Sessions {
   static Future<void> send(Peer peer, String text, {String? id}) async {
     final e = _map[peer.id]; if (e == null) return;
     final m = ChatMessage(id: id ?? DateTime.now().microsecondsSinceEpoch.toRadixString(36), text: text, timestamp: DateTime.now(), direction: MessageDirection.sent);
-    await MessageStore.save(peer.id, e.messages); e.onNewMessage?.call(m);
+    e.messages.add(m); // ← 修复：发送的消息未加入列表
+    await _save(peer.id, e);
+    e.onNewMessage?.call(m);
   }
 
   static Future<void> recall(Peer peer, ChatMessage msg) async {
     final e = _map[peer.id]; if (e == null) return;
     final idx = e.messages.indexWhere((x) => x.id == msg.id);
-    if (idx >= 0) { e.messages[idx] = msg.copyRecalled(); await MessageStore.save(peer.id, e.messages); e.onRecall?.call(e.messages[idx]); }
+    if (idx >= 0) { e.messages[idx] = msg.copyRecalled(); await _save(peer.id, e); e.onRecall?.call(e.messages[idx]); }
   }
 
-  static void remove(Peer peer) { _map.remove(peer.id)?.session.dispose(); }
-  static void removeAll() { for (final e in _map.values) e.session.dispose(); _map.clear(); }
+  static void remove(Peer peer) { _map.remove(peer.id)?.session.close(); }
+  static void removeAll() { for (final e in _map.values) e.session.close(); _map.clear(); }
+
+  static Future<void> _save(String id, _Entry e) => MessageStore.save(id, e.messages);
 }
 
 class _Entry {

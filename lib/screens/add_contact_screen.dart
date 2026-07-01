@@ -78,7 +78,7 @@ class _SignalTabState extends State<_SignalTab> {
   void _accept(String sdp) async {
     try {
       final s = SecureSession(identity: widget.identity);
-      s.onPeerConnected = (peer) async { await PeerStorage.save(peer); Sessions.put(peer, s); if (mounted) widget.onDone(peer); };
+      s.onPeerConnected = (peer) async { await PeerStorage.save(peer); await Sessions.put(peer, s); if (mounted) widget.onDone(peer); };
       final a = await s.createAnswer(sdp);
       if (mounted) _sig.sendAnswer(_rawFp, a); else s.close();
     } catch (_) {}
@@ -87,7 +87,7 @@ class _SignalTabState extends State<_SignalTab> {
   void _connect(DiscoveredPeer dp) async {
     setState(() => _busy = true);
     _pending = SecureSession(identity: widget.identity);
-    _pending!.onPeerConnected = (peer) async { await PeerStorage.save(peer); Sessions.put(peer, _pending!); if (mounted) widget.onDone(peer); };
+    _pending!.onPeerConnected = (peer) async { await PeerStorage.save(peer); await Sessions.put(peer, _pending!); if (mounted) widget.onDone(peer); };
     try {
       final o = await _pending!.createOffer();
       if (mounted) _sig.sendOffer(dp.fingerprint, o); else { _pending = null; setState(() => _busy = false); }
@@ -153,7 +153,7 @@ class _LanTabState extends State<_LanTab> {
   void _accept(String sdp) async {
     try {
       final s = SecureSession(identity: widget.identity);
-      s.onPeerConnected = (peer) async { await PeerStorage.save(peer); Sessions.put(peer, s); if (mounted) widget.onDone(peer); };
+      s.onPeerConnected = (peer) async { await PeerStorage.save(peer); await Sessions.put(peer, s); if (mounted) widget.onDone(peer); };
       final a = await s.createAnswer(sdp);
       if (mounted) _lan.sendSignaling(a); else s.close();
     } catch (_) {}
@@ -162,7 +162,7 @@ class _LanTabState extends State<_LanTab> {
   void _connect(DiscoveredPeer dp) async {
     setState(() => _busy = true);
     _pending = SecureSession(identity: widget.identity);
-    _pending!.onPeerConnected = (peer) async { await PeerStorage.save(peer); Sessions.put(peer, _pending!); if (mounted) widget.onDone(peer); };
+    _pending!.onPeerConnected = (peer) async { await PeerStorage.save(peer); await Sessions.put(peer, _pending!); if (mounted) widget.onDone(peer); };
     try {
       final o = await _pending!.createOffer();
       if (mounted) _lan.sendSignaling(o); else { _pending = null; setState(() => _busy = false); }
@@ -209,7 +209,7 @@ class _ManualTabState extends State<_ManualTab> {
   bool _loading = false, _showPaste = false;
 
   @override void initState() { super.initState(); _init(); }
-  void _init() { _session?.close(); _session = SecureSession(identity: widget.identity); _session!.onPhaseChanged = (p) { if (mounted) setState(() => _phase = p); }; _session!.onPeerConnected = (peer) async { await PeerStorage.save(peer); Sessions.put(peer, _session!); if (mounted) widget.onDone(peer); }; }
+  void _init() { _session?.close(); _session = SecureSession(identity: widget.identity); _session!.onPhaseChanged = (p) { if (mounted) setState(() => _phase = p); }; _session!.onPeerConnected = (peer) async { await PeerStorage.save(peer); await Sessions.put(peer, _session!); if (mounted) widget.onDone(peer); }; }
   @override void dispose() { _pasteCtrl.dispose(); super.dispose(); }
 
   Future<void> _createOffer() async { setState(() => _loading = true);
