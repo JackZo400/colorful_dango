@@ -58,7 +58,8 @@ class _HomeScreenState extends State<HomeScreen> {
                 title: Text(p.displayName, style: const TextStyle(fontFamily: 'monospace', fontSize: 14)),
                 subtitle: Text(Sessions.isOnline(p) ? l.get('online') : l.get('offline'), style: TextStyle(color: Sessions.isOnline(p) ? Colors.green : Colors.grey, fontSize: 12)),
                 trailing: const Icon(Icons.chevron_right),
-                onTap: () { final s = Sessions.get(p); if (s != null && s.isReady) { Navigator.push(cx, MaterialPageRoute(builder: (_) => ChatScreen(peer: p, session: s))); } else { _reconnect(p); } }))).toList())),
+                onTap: () { final s = Sessions.get(p); if (s != null && s.isReady) { Navigator.push(cx, MaterialPageRoute(builder: (_) => ChatScreen(peer: p, session: s))); } else { _addContact(); } },
+                onLongPress: () => _rename(p),
       ]))),
       floatingActionButton: FloatingActionButton.extended(onPressed: _addContact, icon: const Icon(Icons.person_add), label: Text(l.get('add_contact'))),
     );
@@ -72,6 +73,17 @@ class _HomeScreenState extends State<HomeScreen> {
   void _reconnect(Peer p) => showDialog(context: context, builder: (ctx) => AlertDialog(
     title: Text(l.get('reconnect')), content: Text('${p.displayName}\n\n${l.get('reconnect_msg')}'),
     actions: [TextButton(onPressed: () => Navigator.pop(ctx), child: Text(l.get('cancel'))), FilledButton(onPressed: () { Navigator.pop(ctx); _addContact(); }, child: Text(l.get('add_contact')))]));
+
+  void _rename(Peer p) {
+    final ctrl = TextEditingController(text: p.displayName);
+    showDialog(context: context, builder: (ctx) => AlertDialog(
+      title: Text(p.displayName), content: TextField(controller: ctrl, autofocus: true),
+      actions: [TextButton(onPressed: () => Navigator.pop(ctx), child: Text(l.get('cancel'))), FilledButton(onPressed: () async {
+        p.displayName = ctrl.text; await PeerStorage.save(p);
+        setState(() {}); Navigator.pop(ctx);
+      }, child: Text(l.get('save')))],
+    ));
+  }
 
   void _showAbout() => showDialog(context: context, builder: (ctx) => AlertDialog(title: _colorfulTitle(),
     content: Text(l.get('about_content')), actions: [TextButton(onPressed: () => Navigator.pop(ctx), child: Text(l.get('close')))]));
