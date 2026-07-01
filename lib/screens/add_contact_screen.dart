@@ -50,7 +50,7 @@ class _SignalTabState extends State<_SignalTab> {
   final _sig = SignalingClient();
   final _ctrl = TextEditingController(text: SignalingClient.cachedUrl ?? 'ws://38.22.90.80:8765');
   final List<DiscoveredPeer> _peers = [];
-  bool _on = false, _busy = false;
+  bool _on = false, _connecting = false, _busy = false;
   String _rawFp = '';
   SecureSession? _pending;
 
@@ -62,15 +62,18 @@ class _SignalTabState extends State<_SignalTab> {
     if (mounted) setState(() => _rawFp = fp.map((b) => b.toRadixString(16).padLeft(2, '0')).join(''));
   }
 
-  void _toggle() {
-    setState(() => _on = true);
-    _sig.connect(_rawFp, url: _ctrl.text).then((ok) {
-      if (!ok || !mounted) { setState(() => _on = false); return; }
-      SignalingClient.cachedUrl = _ctrl.text;
-      _sig.onPeerOnline.listen((fp) { if (mounted && !_peers.any((e) => e.fingerprint == fp)) setState(() => _peers.add(DiscoveredPeer(fingerprint: fp))); });
-      _sig.onOffer.listen((o) => _accept(o.sdp));
-      _sig.onAnswer.listen((a) async { if (_pending != null) { try { await _pending!.acceptAnswer(a.sdp); } catch (_) {} } });
-    }).catchError((_) { if (mounted) setState(() => _on = false); });
+  void _toggle() async {
+    if (_on) { _sig.disconnect(); setState(() { _on = false; _peers.clear(); }); return; }
+    setState(() => _connecting = true);
+    SignalingClient.cachedUrl = _ctrl.text;
+    _sig.onPeerOnline.listen((fp) { if (mounted && !_peers.any((e) => e.fingerprint == fp)) setState(() => _peers.add(DiscoveredPeer(fingerprint: fp))); });
+    _sig.onPeerOffline.listen((fp) { if (mounted) setState(() => _peers.removeWhere((e) => e.fingerprint == fp)); });
+    _sig.onOffer.listen((o) => _accept(o.sdp));
+    _sig.onAnswer.listen((a) async { if (_pending != null) { try { await _pending!.acceptAnswer(a.sdp); } catch (_) {} } });
+    final ok = await _sig.connect(_rawFp, url: _ctrl.text);
+    if (!mounted) return;
+    if (!ok) { setState(() => _connecting = false); return; }
+    setState(() { _on = true; _connecting = false; });
   }
 
   void _accept(String sdp) async {
@@ -95,10 +98,12 @@ class _SignalTabState extends State<_SignalTab> {
   @override Widget build(BuildContext context) {
     final l = L10n.instance;
     return Padding(padding: const EdgeInsets.all(16), child: Column(children: [
-      if (!_on) ...[
-        TextField(controller: _ctrl, decoration: InputDecoration(hintText: 'ws://your-server:8765', border: const OutlineInputBorder())),
-        const SizedBox(height: 12),
+      if (!_on && !_connecting) ...[
+        const SizedBox(height: 8),
         FilledButton.icon(onPressed: _toggle, icon: const Icon(Icons.cloud), label: Text(l.get('connect_server'))),
+      ] else if (_connecting) ...[
+        const SizedBox(height: 40), const CircularProgressIndicator(),
+        const SizedBox(height: 16), Text(l.get('connecting'), style: const TextStyle(color: Colors.grey)),
       ] else ...[
         Row(children: [
           Icon(Icons.cloud_done, color: Colors.green.shade400, size: 18), const SizedBox(width: 8),
