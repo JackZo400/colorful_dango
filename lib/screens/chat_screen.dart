@@ -3,9 +3,11 @@ library;
 
 import 'dart:async';
 import 'dart:io' show Platform;
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/gestures.dart';
+import 'package:image_picker/image_picker.dart';
 import '../l10n.dart';
 import '../models/message.dart';
 import '../models/peer.dart';
@@ -111,8 +113,19 @@ class _ChatScreenState extends State<ChatScreen> {
                 if (isDesktop) return Listener(onPointerDown: (e) { if (e.buttons == kSecondaryMouseButton) _showPopup(msg, e.position); }, child: bubble);
                 return GestureDetector(onLongPressStart: (d) => _showPopup(msg, d.globalPosition), child: bubble);
               })),
-        _InputBar(ctrl: _ctrl, focusNode: _focusNode, enabled: _ready, onSend: _send),
+        _InputBar(ctrl: _ctrl, focusNode: _focusNode, enabled: _ready, onSend: _send, onPickImage: _pickImage),
       ]));
+  }
+
+  Future<void> _pickImage() async {
+    if (!_ready) return;
+    final img = await ImagePicker().pickImage(source: ImageSource.gallery, imageQuality: 70);
+    if (img == null) return;
+    final bytes = await img.readAsBytes();
+    await _session!.sendBinary(bytes);
+    final id = DateTime.now().microsecondsSinceEpoch.toRadixString(36);
+    await Sessions.send(widget.peer, '[图片]', id: id);
+    _scrollToBottom();
   }
 
   Future<void> _send(String t) async {
@@ -155,14 +168,16 @@ class _Bubble extends StatelessWidget {
 }
 
 class _InputBar extends StatelessWidget {
-  final TextEditingController ctrl; final FocusNode focusNode; final bool enabled; final void Function(String) onSend;
-  const _InputBar({required this.ctrl, required this.focusNode, required this.enabled, required this.onSend});
+  final TextEditingController ctrl; final FocusNode focusNode; final bool enabled;
+  final void Function(String) onSend; final VoidCallback? onPickImage;
+  const _InputBar({required this.ctrl, required this.focusNode, required this.enabled, required this.onSend, this.onPickImage});
   @override Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     final l = L10n.instance;
     return Container(padding: const EdgeInsets.fromLTRB(8, 4, 8, 8),
       decoration: BoxDecoration(color: cs.surface, boxShadow: [BoxShadow(color: Colors.black.withAlpha(12), blurRadius: 4, offset: const Offset(0, -1))]),
       child: SafeArea(child: Row(children: [
+        if (onPickImage != null) IconButton(icon: const Icon(Icons.image_outlined), onPressed: enabled ? onPickImage : null, tooltip: '图片'),
         Expanded(child: TextField(controller: ctrl, focusNode: focusNode, enabled: enabled,
           decoration: InputDecoration(hintText: enabled ? l.get('input_msg') : l.get('waiting'), filled: true,
             fillColor: cs.surfaceContainerHighest.withAlpha(80), border: OutlineInputBorder(borderRadius: BorderRadius.circular(24), borderSide: BorderSide.none),
