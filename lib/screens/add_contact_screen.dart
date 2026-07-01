@@ -77,6 +77,16 @@ class _SignalTabState extends State<_SignalTab> {
   }
 
   void _accept(String sdp) async {
+    // 连接请求确认
+    final ok = await showDialog<bool>(context: context, builder: (ctx) => AlertDialog(
+      title: const Text('🔐 加密连接请求'),
+      content: const Text('有人想与你建立加密连接。\n\n接受后将建立端到端加密通道。'),
+      actions: [
+        TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('拒绝')),
+        FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('接受')),
+      ],
+    ));
+    if (ok != true || !mounted) return;
     try {
       final s = SecureSession(identity: widget.identity);
       s.onPeerConnected = (peer) async { await PeerStorage.save(peer); await Sessions.put(peer, s); if (mounted) widget.onDone(peer); };

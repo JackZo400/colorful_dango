@@ -8,12 +8,13 @@ import '../p2p/signaling_client.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
+  static bool expBluetooth = false;
+  static bool expRelay = false;
   @override State<SettingsScreen> createState() => _SettingsScreenState();
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
   final _sigCtrl = TextEditingController(text: SignalingClient.cachedUrl ?? 'ws://38.22.90.80:8765');
-  bool _bt = false, _expRelay = false;
 
   @override void dispose() { _sigCtrl.dispose(); super.dispose(); }
 
@@ -58,12 +59,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
           SwitchListTile(
             title: Text(l.lang == AppLang.zh ? '蓝牙发现' : 'Bluetooth Discovery'),
             subtitle: Text(l.lang == AppLang.zh ? '通过蓝牙发现附近设备（可能不稳定）' : 'Discover nearby devices via Bluetooth (unstable)'),
-            value: _bt, onChanged: (v) => setState(() => _bt = v),
+            value: SettingsScreen.expBluetooth, onChanged: (v) => setState(() => SettingsScreen.expBluetooth = v),
           ),
           SwitchListTile(
             title: Text(l.lang == AppLang.zh ? '信令中继' : 'Signaling Relay'),
             subtitle: Text(l.lang == AppLang.zh ? '消息通过信令服务器中转（跨网可靠）' : 'Relay messages through signaling server (cross-network)'),
-            value: _expRelay, onChanged: (v) => setState(() => _expRelay = v),
+            value: SettingsScreen.expRelay, onChanged: (v) => setState(() => SettingsScreen.expRelay = v),
           ),
         ]),
         // 关于
