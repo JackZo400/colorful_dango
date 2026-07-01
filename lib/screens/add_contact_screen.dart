@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:share_plus/share_plus.dart';
 import '../crypto/identity.dart';
+import '../p2p/lan_discovery.dart';
 import '../l10n.dart';
 import '../models/peer.dart';
 import '../models/peer_storage.dart';
