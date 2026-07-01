@@ -1,4 +1,4 @@
-/// 设置页面
+/// 设置
 library;
 
 import 'package:flutter/material.dart';
@@ -12,58 +12,66 @@ class SettingsScreen extends StatefulWidget {
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
-  final _sigUrl = TextEditingController(text: SignalingClient.cachedUrl ?? 'ws://');
+  final _sigCtrl = TextEditingController(text: SignalingClient.cachedUrl ?? 'ws://38.22.90.80:8765');
 
-  @override void dispose() { _sigUrl.dispose(); super.dispose(); }
+  @override void dispose() { _sigCtrl.dispose(); super.dispose(); }
 
   @override Widget build(BuildContext context) {
     final l = L10n.instance;
     final cs = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Scaffold(
       appBar: AppBar(title: const Text('⚙️ 设置 / Settings')),
       body: ListView(children: [
         // 语言
-        _Section(title: '语言 / Language', children: [
+        _section('🌐 语言 / Language', [
           SwitchListTile(
-            title: Text(l.get('signal_tab'), style: const TextStyle(fontWeight: FontWeight.w500)),
-            subtitle: Text(l.lang == AppLang.zh ? '中文' : 'English'),
+            title: const Text('中文'), subtitle: const Text('English'),
             value: l.lang == AppLang.zh,
             onChanged: (_) => l.toggle(),
           ),
         ]),
         // 主题
-        _Section(title: '主题 / Theme', children: [
+        _section(isDark ? '🌙 暗色模式' : '☀️ 亮色模式', [
           SwitchListTile(
-            title: const Text('暗色模式'),
-            subtitle: const Text('Dark mode'),
-            value: Theme.of(context).brightness == Brightness.dark,
+            title: Text(isDark ? '暗色模式' : '亮色模式'),
+            value: isDark,
             onChanged: (_) => SecureChatApp.of(context)?.toggleTheme(),
           ),
         ]),
         // 信令服务器
-        _Section(title: '信令服务器 / Signaling', children: [
-          Padding(padding: const EdgeInsets.symmetric(horizontal: 16), child: TextField(
-            controller: _sigUrl, decoration: const InputDecoration(hintText: 'ws://your-server:8765', border: OutlineInputBorder()),
-            onChanged: (v) => SignalingClient.cachedUrl = v,
-          )),
+        _section('☁️ 信令服务器 / Signaling', [
+          Padding(padding: const EdgeInsets.symmetric(horizontal: 16), child: Column(children: [
+            TextField(controller: _sigCtrl, decoration: const InputDecoration(
+              hintText: 'ws://38.22.90.80:8765', border: OutlineInputBorder(),
+              helperText: '跨网络连接需要信令服务器'),
+              onChanged: (v) => SignalingClient.cachedUrl = v,
+            ),
+          ])),
         ]),
         // 关于
-        _Section(title: l.get('about'), children: [
-          ListTile(title: const Text('三彩丸子'), subtitle: const Text('v1.1.0-beta'), trailing: const Icon(Icons.info_outline)),
-          ListTile(title: Text(l.get('about_content')), subtitle: const Text('🤖 AI · 👤 JackZhao'), isThreeLine: true, dense: true),
+        _section('💜 关于三彩丸子', [
+          const ListTile(
+            title: Text('三彩丸子', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+            subtitle: Text('v1.1.0-beta'),
+          ),
+          const Padding(padding: EdgeInsets.symmetric(horizontal: 16), child: Text(
+            '一款端到端加密的私密聊天工具。\n\n'
+            '你的消息只存在于你和对方之间，\n'
+            '不经过任何服务器的存储。\n\n'
+            '💻 全部代码由 AI 生成\n'
+            '🧑 项目创造者 JackZhao\n\n'
+            '安全 · 私密 · 开源 · 免费',
+            style: TextStyle(fontSize: 14, height: 1.6),
+          )),
         ]),
       ]),
     );
   }
-}
 
-class _Section extends StatelessWidget {
-  final String title;
-  final List<Widget> children;
-  const _Section({required this.title, required this.children});
-
-  @override Widget build(BuildContext context) => Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-    Padding(padding: const EdgeInsets.fromLTRB(16, 20, 16, 8), child: Text(title, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Theme.of(context).colorScheme.primary))),
+  Widget _section(String title, List<Widget> children) => Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+    Padding(padding: const EdgeInsets.fromLTRB(16, 24, 16, 8), child: Text(title, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Theme.of(context).colorScheme.primary))),
     ...children,
     const Divider(),
   ]);
