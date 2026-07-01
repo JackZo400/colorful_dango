@@ -1,7 +1,7 @@
 name: colorful_dango
 description: 三彩丸子 — E2EE+P2P 私密聊天
 publish_to: 'none'
-version: 1.0.0-alpha
+version: 0.2.1-Alpha
 
 environment:
   sdk: ^3.4.0

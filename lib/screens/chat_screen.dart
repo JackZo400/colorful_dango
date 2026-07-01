@@ -64,6 +64,21 @@ class _ChatScreenState extends State<ChatScreen> {
     _session!.sendTyping(_ctrl.text.isNotEmpty);
   }
 
+  void _showSecurity() {
+    final code = widget.peer.fingerprintHex.replaceAll(':', '').substring(0, 8).toUpperCase();
+    showDialog(context: context, builder: (ctx) => AlertDialog(
+      title: const Text('🔐 安全信息'),
+      content: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
+        const Text('安全码 (双方一致则无中间人)', style: TextStyle(fontWeight: FontWeight.bold)),
+        const SizedBox(height: 4), SelectableText(code, style: const TextStyle(fontFamily: 'monospace', fontSize: 22, letterSpacing: 4)),
+        const SizedBox(height: 16), const Text('对方身份指纹', style: TextStyle(fontWeight: FontWeight.bold)),
+        const SizedBox(height: 4), SelectableText(widget.peer.displayName, style: const TextStyle(fontSize: 11, fontFamily: 'monospace')),
+        const SizedBox(height: 16), const Text('连接方式', style: TextStyle(fontWeight: FontWeight.bold)),
+        const SizedBox(height: 4), const Text('端到端加密直连 (WebRTC DataChannel)'),
+        const SizedBox(height: 16), Text('🔒 AES-256-GCM + X25519 + Ed25519', style: TextStyle(color: Colors.green.shade600, fontSize: 12)),
+      ]), actions: [FilledButton(onPressed: () => Navigator.pop(ctx), child: const Text('关闭'))]));
+  }
+
   void _clearChat() {
     final l = L10n.instance;
     showDialog(context: context, builder: (ctx) => AlertDialog(
@@ -101,8 +116,8 @@ class _ChatScreenState extends State<ChatScreen> {
           Text(_peerTyping ? '对方正在输入...' : _ready ? l.get('encrypted') : l.get('connecting'), style: TextStyle(fontSize: 11, color: _peerTyping ? Colors.green : _ready ? Colors.green.shade400 : Colors.orange)),
         ])]),
         actions: [
+          if (_ready) IconButton(icon: const Icon(Icons.shield_outlined), tooltip: '安全信息', onPressed: _showSecurity),
           if (_ready) IconButton(icon: const Icon(Icons.delete_sweep), tooltip: l.get('clear_chat'), onPressed: _clearChat),
-          if (_ready) const Padding(padding: EdgeInsets.only(right: 8), child: Icon(Icons.lock, color: Colors.green, size: 16)),
         ]),
       body: Column(children: [
         Expanded(child: _messages.isEmpty

@@ -70,7 +70,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         ]),
         // 关于
         _section(l.lang == AppLang.zh ? '💜 关于' : '💜 About', [
-          const ListTile(title: Text('三彩丸子', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)), subtitle: Text('v1.1.0-beta')),
+          const ListTile(title: Text('三彩丸子', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)), subtitle: Text('v0.2.1-Alpha')),
           Padding(padding: const EdgeInsets.symmetric(horizontal: 16), child: Text(
             l.lang == AppLang.zh
               ? '端到端加密私密聊天工具。\n你的消息只存在于你与对方之间，\n不经过任何服务器的存储。\n\n💻 全部代码由 AI 生成\n🧑 项目创造者 JackZhao\n\n安全 · 私密 · 开源 · 免费'
