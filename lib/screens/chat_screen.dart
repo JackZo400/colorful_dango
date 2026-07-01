@@ -4,10 +4,10 @@ library;
 import 'dart:async';
 import 'dart:io' show Platform;
 import 'dart:typed_data';
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/gestures.dart';
-import 'package:image_picker/image_picker.dart';
 import '../l10n.dart';
 import '../models/message.dart';
 import '../models/peer.dart';
@@ -113,18 +113,19 @@ class _ChatScreenState extends State<ChatScreen> {
                 if (isDesktop) return Listener(onPointerDown: (e) { if (e.buttons == kSecondaryMouseButton) _showPopup(msg, e.position); }, child: bubble);
                 return GestureDetector(onLongPressStart: (d) => _showPopup(msg, d.globalPosition), child: bubble);
               })),
-        _InputBar(ctrl: _ctrl, focusNode: _focusNode, enabled: _ready, onSend: _send, onPickImage: _pickImage),
+        _InputBar(ctrl: _ctrl, focusNode: _focusNode, enabled: _ready, onSend: _send, onPickImage: _pickFile),
       ]));
   }
 
-  Future<void> _pickImage() async {
+  Future<void> _pickFile() async {
     if (!_ready) return;
-    final img = await ImagePicker().pickImage(source: ImageSource.gallery, imageQuality: 70);
-    if (img == null) return;
-    final bytes = await img.readAsBytes();
-    await _session!.sendBinary(bytes);
+    final result = await FilePicker.platform.pickFiles();
+    if (result == null || result.files.isEmpty) return;
+    final file = result.files.first;
+    if (file.bytes == null) return;
+    await _session!.sendFile(file.bytes!, file.name);
     final id = DateTime.now().microsecondsSinceEpoch.toRadixString(36);
-    await Sessions.send(widget.peer, '[图片]', id: id);
+    await Sessions.send(widget.peer, '[文件: ${file.name}], id: id);
     _scrollToBottom();
   }
 
@@ -177,7 +178,7 @@ class _InputBar extends StatelessWidget {
     return Container(padding: const EdgeInsets.fromLTRB(8, 4, 8, 8),
       decoration: BoxDecoration(color: cs.surface, boxShadow: [BoxShadow(color: Colors.black.withAlpha(12), blurRadius: 4, offset: const Offset(0, -1))]),
       child: SafeArea(child: Row(children: [
-        if (onPickImage != null) IconButton(icon: const Icon(Icons.image_outlined), onPressed: enabled ? onPickImage : null, tooltip: '图片'),
+        if (onPickImage != null) IconButton(icon: const Icon(Icons.attach_file), onPressed: enabled ? onPickImage : null, tooltip: '文件''),
         Expanded(child: TextField(controller: ctrl, focusNode: focusNode, enabled: enabled,
           decoration: InputDecoration(hintText: enabled ? l.get('input_msg') : l.get('waiting'), filled: true,
             fillColor: cs.surfaceContainerHighest.withAlpha(80), border: OutlineInputBorder(borderRadius: BorderRadius.circular(24), borderSide: BorderSide.none),

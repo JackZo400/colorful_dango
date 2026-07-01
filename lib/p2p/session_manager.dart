@@ -138,10 +138,38 @@ class SecureSession {
 
   Future<void> sendBinary(Uint8List data) async {
     if (_sharedSecret == null) return;
-    // 格式: IMG|base64
-    final b64 = base64.encode(data);
-    final ct = await _symmetric.encrypt(sharedSecret: _sharedSecret!, plaintext: Uint8List.fromList(utf8.encode('IMG|$b64')));
+    final marker = utf8.encode('IMG\x00');
+    final payload = Uint8List(marker.length + data.length);
+    payload.setAll(0, marker); payload.setAll(marker.length, data);
+    final ct = await _symmetric.encrypt(sharedSecret: _sharedSecret!, plaintext: payload);
     await _p2p.send(ct);
+  }
+
+  final Map<int, _FileReceive> _fileReceives = {};
+  void Function(String filename, Uint8List data)? onFileReceived;
+
+  Future<void> sendFile(Uint8List data, String filename) async {
+    if (_sharedSecret == null) return;
+    const chunkSize = 60000;
+    final totalChunks = (data.length + chunkSize - 1) ~/ chunkSize;
+    final transferId = DateTime.now().microsecondsSinceEpoch & 0xFFFFFFFF;
+    for (int i = 0; i < totalChunks; i++) {
+      final start = i * chunkSize;
+      final end = (start + chunkSize).clamp(0, data.length);
+      final chunk = data.sublist(start, end);
+      final fnameBytes = utf8.encode(filename);
+      final header = Uint8List(17 + fnameBytes.length);
+      header.buffer.asByteData().setUint32(0, 0x46494C00, Endian.big);
+      header.buffer.asByteData().setUint32(4, transferId, Endian.big);
+      header.buffer.asByteData().setUint32(8, i, Endian.big);
+      header.buffer.asByteData().setUint32(12, totalChunks, Endian.big);
+      header[16] = fnameBytes.length;
+      header.setAll(17, fnameBytes);
+      final payload = Uint8List(header.length + chunk.length);
+      payload.setAll(0, header); payload.setAll(header.length, chunk);
+      final ct = await _symmetric.encrypt(sharedSecret: _sharedSecret!, plaintext: payload);
+      await _p2p.send(ct);
+    }
   }
 
   void _onP2PMessage(Uint8List encrypted) {
@@ -150,6 +178,11 @@ class SecureSession {
       // 检测二进制图片: IMG\0 开头
       if (pt.length > 4 && pt[0] == 0x49 && pt[1] == 0x4D && pt[2] == 0x47 && pt[3] == 0x00) {
         onBinaryMessage?.call(pt.sublist(4));
+        return;
+      }
+      // 检测文件分块: FIL\0 开头 (0x46 0x49 0x4C 0x00)
+      if (pt.length > 16 && pt[0] == 0x46 && pt[1] == 0x49 && pt[2] == 0x4C && pt[3] == 0x00) {
+        _handleFileChunk(pt);
         return;
       }
       final text = utf8.decode(pt);
@@ -189,5 +222,31 @@ class SecureSession {
     var b = s.replaceAll('-', '+').replaceAll('_', '/');
     while (b.length % 4 != 0) b += '=';
     return Uint8List.fromList(gzip.decode(base64.decode(b)));
+  void _handleFileChunk(Uint8List pt) {
+    final bd = pt.buffer.asByteData();
+class _FileReceive {
+  final String filename; final int totalChunks;
+  final Map<int, Uint8List> chunks = {};
+  _FileReceive({required this.filename, required this.totalChunks});
+}
+    final transferId = bd.getUint32(4, Endian.big);
+    final chunkIdx = bd.getUint32(8, Endian.big);
+    final totalChunks = bd.getUint32(12, Endian.big);
+    final nameLen = pt[16];
+    final fname = utf8.decode(pt.sublist(17, 17 + nameLen));
+    final data = pt.sublist(17 + nameLen);
+    var fr = _fileReceives[transferId];
+    if (fr == null) {
+      fr = _FileReceive(filename: fname, totalChunks: totalChunks);
+      _fileReceives[transferId] = fr;
+    }
+    fr.chunks[chunkIdx] = data;
+    if (fr.chunks.length == totalChunks) {
+      final all = <int>[];
+      for (int i = 0; i < totalChunks; i++) all.addAll(fr.chunks[i]!);
+      onFileReceived?.call(fr.filename, Uint8List.fromList(all));
+      _fileReceives.remove(transferId);
+    }
+  }
   }
 }
