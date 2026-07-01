@@ -42,11 +42,11 @@ class _SecureChatAppState extends State<SecureChatApp> {
       title: '三彩丸子',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
-        colorSchemeSeed: const Color(0xFF6C4AB6),
+        colorSchemeSeed: const Color(0xFF7C3AED),
         brightness: Brightness.light,
       ),
       darkTheme: ThemeData(
-        colorSchemeSeed: const Color(0xFF6C4AB6),
+        colorSchemeSeed: const Color(0xFFA78BFA),
         brightness: Brightness.dark,
       ),
       themeMode: _dark ? ThemeMode.dark : ThemeMode.light,

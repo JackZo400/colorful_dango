@@ -48,3 +48,6 @@ release_android.apk
 *.zip
 *.dll
 *.exe
+*_beta/
+*_windows/
+*.zip

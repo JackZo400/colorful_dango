@@ -75,7 +75,7 @@ class _HomeScreenState extends State<HomeScreen> {
   void _showAbout() => showDialog(context: context, builder: (ctx) => AlertDialog(title: _colorfulTitle(),
     content: Text(l.get('about_content')), actions: [TextButton(onPressed: () => Navigator.pop(ctx), child: Text(l.get('close')))]));
 
-  Widget _colorfulTitle() => ShaderMask(shaderCallback: (b) => const LinearGradient(colors: [Color(0xFF6C4AB6), Color(0xFFE91E63), Color(0xFFFF9800)]).createShader(b),
+  Widget _colorfulTitle() => ShaderMask(shaderCallback: (b) => const LinearGradient(colors: [Color(0xFF8B5CF6), Color(0xFFEC4899), Color(0xFFF59E0B)]).createShader(b),
     child: const Text('三彩丸子', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white)));
 }
 

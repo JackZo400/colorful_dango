@@ -228,22 +228,22 @@ class _ManualTabState extends State<_ManualTab> {
     if (_loading) return const Center(child: CircularProgressIndicator());
     return Padding(padding: const EdgeInsets.all(16), child: _shareData == null
       ? Column(children: [
-          const SizedBox(height: 40), const Icon(Icons.swap_horiz, size: 48, color: Color(0xFF6C4AB6)),
+          const SizedBox(height: 40), const Icon(Icons.swap_horiz, size: 48, color: Color(0xFF7C3AED)),
           const SizedBox(height: 16), Text(l.get('manual_title'), style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w600)),
           const SizedBox(height: 8), Text(l.get('manual_desc'), style: const TextStyle(color: Colors.grey)),
           const SizedBox(height: 32),
-          SizedBox(width: double.infinity, child: FilledButton.icon(onPressed: _createOffer, icon: const Icon(Icons.upload), label: Text(l.get('create_offer')), style: FilledButton.styleFrom(padding: const EdgeInsets.all(15), backgroundColor: const Color(0xFF6C4AB6)))),
+          SizedBox(width: double.infinity, child: FilledButton.icon(onPressed: _createOffer, icon: const Icon(Icons.upload), label: Text(l.get('create_offer')), style: FilledButton.styleFrom(padding: const EdgeInsets.all(15), backgroundColor: const Color(0xFF7C3AED)))),
           const SizedBox(height: 16),
           SizedBox(width: double.infinity, child: OutlinedButton.icon(onPressed: () => showDialog(context: context, builder: (ctx) { final c = TextEditingController();
             return AlertDialog(title: Text(l.get('paste_dialog')), content: TextField(controller: c, maxLines: 5, decoration: const InputDecoration(hintText: 'Paste...')), actions: [TextButton(onPressed: () => Navigator.pop(ctx), child: Text(l.get('cancel'))), FilledButton(onPressed: () { Navigator.pop(ctx); _handleOffer(c.text); }, child: Text(l.get('connect_btn')))]); }), icon: const Icon(Icons.download), label: Text(l.get('paste_offer')), style: OutlinedButton.styleFrom(padding: const EdgeInsets.all(15))))])
       : Column(children: [
           Card(elevation: 2, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)), child: Padding(padding: const EdgeInsets.all(20), child: Column(children: [
-            const Icon(Icons.link, size: 36, color: Color(0xFF6C4AB6)), const SizedBox(height: 12),
+            const Icon(Icons.link, size: 36, color: Color(0xFF7C3AED)), const SizedBox(height: 12),
             Text(_phase == SessionPhase.answerCreated ? l.get('answer_ready') : l.get('data_ready'), style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
             const SizedBox(height: 4), Text('${_shareData!.length} ${l.get('chars')}', style: TextStyle(fontSize: 12, color: Colors.grey.shade500)),
             const SizedBox(height: 16),
             Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-              FilledButton.icon(onPressed: () { Clipboard.setData(ClipboardData(text: _shareData!)); ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l.get('copied')))); }, icon: const Icon(Icons.copy), label: Text(l.get('copy')), style: FilledButton.styleFrom(backgroundColor: const Color(0xFF6C4AB6))),
+              FilledButton.icon(onPressed: () { Clipboard.setData(ClipboardData(text: _shareData!)); ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l.get('copied')))); }, icon: const Icon(Icons.copy), label: Text(l.get('copy')), style: FilledButton.styleFrom(backgroundColor: const Color(0xFF7C3AED))),
               if (!Platform.isWindows && !Platform.isLinux && !Platform.isMacOS) ...[const SizedBox(width: 12), OutlinedButton.icon(onPressed: () => Share.share(_shareData!), icon: const Icon(Icons.share), label: Text(l.get('share')))],
             ]),
             if (_phase == SessionPhase.answerCreated || _phase == SessionPhase.offerCreated) ...[
