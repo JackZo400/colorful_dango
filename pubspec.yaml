@@ -21,6 +21,7 @@ dependencies:
 
   # --- UI ---
   share_plus: ^10.1.4      # 手机系统分享
+  image_picker: ^1.1.2
 
   cupertino_icons: ^1.0.8
 

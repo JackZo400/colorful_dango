@@ -23,6 +23,7 @@ class Sessions {
       if (idx >= 0) { entry.messages[idx] = entry.messages[idx].copyRecalled(); _save(id, entry); entry.onRecall?.call(entry.messages[idx]); }
     };
     session.onClearRequest = () async { entry.messages.clear(); entry.lastText = null; await MessageStore.clear(id); entry.onClear?.call(); };
+    session.onDisconnect = () { onStatusChanged?.call(id, false); };
     session.onPhaseChanged = (p) {
       if (p == SessionPhase.failed || p == SessionPhase.idle) onStatusChanged?.call(id, false);
       if (p == SessionPhase.ready) onStatusChanged?.call(id, true);

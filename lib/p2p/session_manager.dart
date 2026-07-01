@@ -31,6 +31,7 @@ class SecureSession {
   void Function()? onClearRequest;
   void Function(bool)? onTyping;
   void Function(Uint8List)? onBinaryMessage; // 图片/文件
+  void Function()? onDisconnect;
   void Function(dynamic)? onPhaseChanged; // 兼容旧代码
   SessionPhase _phase = SessionPhase.idle; // 兼容旧代码
   SessionPhase get phase => _phase;
@@ -40,6 +41,7 @@ class SecureSession {
 
   SecureSession({required CryptoIdentity identity}) : _identity = identity {
     _p2p.onMessage = _onP2PMessage;
+    _p2p.onClose = () { onDisconnect?.call(); };
   }
 
   // ─── 发起方 ───

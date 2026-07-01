@@ -76,6 +76,8 @@ class P2PConnection {
     ch.onDataChannelState = (s) {
       if (s == RTCDataChannelState.RTCDataChannelOpen && !_ready.isCompleted) {
         _ready.complete();
+      } else if (s == RTCDataChannelState.RTCDataChannelClosed || s == RTCDataChannelState.RTCDataChannelClosing) {
+        onClose?.call();
       }
     };
     ch.onMessage = (m) {
