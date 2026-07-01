@@ -68,7 +68,7 @@ class _SignalTabState extends State<_SignalTab> {
     SignalingClient.cachedUrl = _ctrl.text;
     _sig.onPeerOnline.listen((fp) { if (mounted && !_peers.any((e) => e.fingerprint == fp)) setState(() => _peers.add(DiscoveredPeer(fingerprint: fp))); });
     _sig.onPeerOffline.listen((fp) { if (mounted) setState(() => _peers.removeWhere((e) => e.fingerprint == fp)); });
-    _sig.onOffer.listen((o) => _accept(o.sdp));
+    _sig.onOffer.listen((o) => _accept(o.from, o.sdp));
     _sig.onAnswer.listen((a) async { if (_pending != null) { try { await _pending!.acceptAnswer(a.sdp); } catch (_) {} } });
     final ok = await _sig.connect(_rawFp, url: _ctrl.text);
     if (!mounted) return;
@@ -76,7 +76,7 @@ class _SignalTabState extends State<_SignalTab> {
     setState(() { _on = true; _connecting = false; });
   }
 
-  void _accept(String sdp) async {
+  void _accept(String from, String sdp) async {
     // 连接请求确认
     final ok = await showDialog<bool>(context: context, builder: (ctx) => AlertDialog(
       title: const Text('🔐 加密连接请求'),
@@ -91,7 +91,7 @@ class _SignalTabState extends State<_SignalTab> {
       final s = SecureSession(identity: widget.identity);
       s.onPeerConnected = (peer) async { await PeerStorage.save(peer); await Sessions.put(peer, s); if (mounted) widget.onDone(peer); };
       final a = await s.createAnswer(sdp);
-      if (mounted) _sig.sendAnswer(_rawFp, a); else s.close();
+      if (mounted) _sig.sendAnswer(from, a); else s.close();
     } catch (_) {}
   }
 
