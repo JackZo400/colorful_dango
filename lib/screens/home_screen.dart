@@ -9,6 +9,7 @@ import '../models/peer_storage.dart';
 import '../p2p/sessions.dart';
 import 'add_contact_screen.dart';
 import 'connect_screen.dart';
+import 'settings_screen.dart';
 import 'chat_screen.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -38,7 +39,7 @@ class _HomeScreenState extends State<HomeScreen> {
       appBar: AppBar(title: _colorfulTitle(), centerTitle: true, backgroundColor: Colors.transparent, elevation: 0, actions: [
         IconButton(icon: Text(l.lang == AppLang.zh ? '中' : 'EN', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)), onPressed: () => l.toggle()),
         IconButton(icon: Icon(Theme.of(cx).brightness == Brightness.dark ? Icons.light_mode : Icons.dark_mode), onPressed: () => SecureChatApp.of(cx)?.toggleTheme()),
-        IconButton(icon: const Icon(Icons.info_outline), onPressed: _showAbout),
+        IconButton(icon: const Icon(Icons.settings), onPressed: () => Navigator.push(cx, MaterialPageRoute(builder: (_) => const SettingsScreen()))),
       ]),
       body: Container(decoration: BoxDecoration(gradient: LinearGradient(colors: [cs.primaryContainer.withAlpha(60), cs.surface], begin: Alignment.topCenter, end: Alignment.bottomCenter)),
         child: SafeArea(child: Column(children: [
