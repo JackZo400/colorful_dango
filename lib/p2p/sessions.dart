@@ -58,6 +58,7 @@ class Sessions {
 
   static void remove(Peer peer) { _map.remove(peer.id)?.session.close(); }
   static void removeAll() { for (final e in _map.values) e.session.close(); _map.clear(); }
+  static void clearMessages(String id) { _map[id]?.messages.clear(); }
 
   static Future<void> _save(String id, _Entry e) => MessageStore.save(id, e.messages);
 }

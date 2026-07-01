@@ -66,7 +66,7 @@ class _ChatScreenState extends State<ChatScreen> {
     showDialog(context: context, builder: (ctx) => AlertDialog(
       title: Text(l.get('clear_chat')), content: Text(l.get('clear_confirm')),
       actions: [TextButton(onPressed: () => Navigator.pop(ctx), child: Text(l.get('cancel'))),
-        FilledButton(onPressed: () { Navigator.pop(ctx); _session?.sendClearRequest(); MessageStore.clear(widget.peer.id); if (mounted) setState(() => _messages.clear()); }, child: Text(l.get('clear')))]));
+        FilledButton(onPressed: () { Navigator.pop(ctx); _session?.sendClearRequest(); MessageStore.clear(widget.peer.id); Sessions.clearMessages(widget.peer.id); if (mounted) setState(() => _messages.clear()); }, child: Text(l.get('clear')))]));
   }
 
   void _showPopup(ChatMessage msg, Offset position) {
@@ -138,7 +138,7 @@ class _Bubble extends StatelessWidget {
     if (msg.recalled) return Align(alignment: sent ? Alignment.centerRight : Alignment.centerLeft,
       child: Container(margin: const EdgeInsets.only(bottom: 6), padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
         decoration: BoxDecoration(color: cs.surfaceContainerHighest.withAlpha(60), borderRadius: BorderRadius.circular(12)),
-        child: Text(sent ? l.get('you_recalled') : l.get('peer_recalled'), style: TextStyle(fontSize: 12, color: cs.outline, fontStyle: FontStyle.italic))));
+        child: Text(sent ? l.get('you_recalled') : l.get('peer_recalled'), style: TextStyle(fontSize: 12, color: cs.outline, ))));
     return Align(alignment: sent ? Alignment.centerRight : Alignment.centerLeft,
       child: Container(margin: const EdgeInsets.only(bottom: 6), padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
         constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.75),
