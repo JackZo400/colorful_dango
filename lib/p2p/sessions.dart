@@ -16,6 +16,7 @@ class Sessions {
     final msgs = old != null ? old.messages : await MessageStore.load(id);
     final entry = _Entry(peer: peer, session: session);
     entry.messages = msgs.toList();
+    if (entry.messages.isNotEmpty) entry.lastText = entry.messages.last.text;
     _map[id] = entry;
 
     session.onMessageReceived = (m) { entry.messages.add(m); entry.lastText = m.text; _save(id, entry); entry.onNewMessage?.call(m); };

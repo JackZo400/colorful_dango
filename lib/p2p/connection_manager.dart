@@ -30,6 +30,7 @@ class P2PConnection {
     _pc = await createPeerConnection(_iceConfig);
     _dc = await _pc!.createDataChannel('chat', RTCDataChannelInit());
     _setupChannel(_dc!);
+    _setupIceMonitoring();
 
     final offer = await _pc!.createOffer();
     await _pc!.setLocalDescription(offer);
@@ -42,6 +43,7 @@ class P2PConnection {
     await _close();
     _pc = await createPeerConnection(_iceConfig);
     _pc!.onDataChannel = (ch) { _dc = ch; _setupChannel(ch); };
+    _setupIceMonitoring();
     await _pc!.setRemoteDescription(RTCSessionDescription(remoteSdp, 'offer'));
     final answer = await _pc!.createAnswer();
     await _pc!.setLocalDescription(answer);
@@ -84,6 +86,14 @@ class P2PConnection {
       if (m.isBinary && onMessage != null) onMessage!(m.binary);
     };
   }
+  void _setupIceMonitoring() {
+    _pc?.onIceConnectionState = (s) {
+      if (s == RTCIceConnectionState.RTCIceConnectionStateDisconnected ||
+          s == RTCIceConnectionState.RTCIceConnectionStateFailed) {
+        onClose?.call();
+      }
+    };
+  }
 
   Future<void> _gatherCandidates() async {
     if (_pc!.iceGatheringState == RTCIceGatheringState.RTCIceGatheringStateComplete) return;
@@ -91,7 +101,7 @@ class P2PConnection {
     _pc!.onIceGatheringState = (s) {
       if (s == RTCIceGatheringState.RTCIceGatheringStateComplete && !c.isCompleted) c.complete();
     };
-    Timer(const Duration(seconds: 5), () { if (!c.isCompleted) c.complete(); });
+    Timer(const Duration(seconds: 3), () { if (!c.isCompleted) c.complete(); });
     await c.future;
   }
 }

@@ -115,6 +115,15 @@ class SecureSession {
   }
 
   Future<void> sendClearRequest() async {
+  Future<void> sendImage(Uint8List imgBytes) async {
+    if (_sharedSecret == null) return;
+    final marker = utf8.encode('IMG\x00');
+    final payload = Uint8List(marker.length + imgBytes.length);
+    payload.setAll(0, marker);
+    payload.setAll(marker.length, imgBytes);
+    final ct = await _symmetric.encrypt(sharedSecret: _sharedSecret!, plaintext: payload);
+    await _p2p.send(ct);
+  }
     if (_sharedSecret == null) return;
     final ct = await _symmetric.encrypt(sharedSecret: _sharedSecret!, plaintext: Uint8List.fromList(utf8.encode('__CLR__')));
     await _p2p.send(ct);
@@ -138,6 +147,11 @@ class SecureSession {
   void _onP2PMessage(Uint8List encrypted) {
     if (_sharedSecret == null) return;
     _symmetric.decrypt(sharedSecret: _sharedSecret!, encrypted: encrypted).then((pt) {
+      // 检测二进制图片: IMG\0 开头
+      if (pt.length > 4 && pt[0] == 0x49 && pt[1] == 0x4D && pt[2] == 0x47 && pt[3] == 0x00) {
+        onBinaryMessage?.call(pt.sublist(4));
+        return;
+      }
       final text = utf8.decode(pt);
       if (text.startsWith('MSG|')) {
         final p = text.split('|');
