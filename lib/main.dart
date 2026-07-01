@@ -165,7 +165,27 @@ class _AppLoaderState extends State<_AppLoader> {
       );
     }
 
+    // 用户协议检查
+    _checkAgreement();
     return SplashScreen(child: HomeScreen(key: ValueKey('${_identity!.ed25519PublicKey.hashCode}_${L10n.instance.lang}'), identity: _identity!));
+  }
+
+  void _checkAgreement() {
+    SharedPreferences.getInstance().then((sp) {
+      if (sp.getBool('agreed') != true && mounted) {
+        showDialog(context: context, barrierDismissible: false, builder: (ctx) => AlertDialog(
+          title: const Text('用户协议'),
+          content: const Text('三彩丸子是一款端到端加密的私密聊天工具。\n\n'
+              '• 你的消息仅存在于你与对方设备上\n'
+              '• 我们不会收集、存储、传输你的任何个人信息\n'
+              '• 请不要使用本工具传播违法内容\n'
+              '• 请遵守当地法律法规\n\n'
+              '本工具为开源项目，全部代码由 AI 生成。\n'
+              '使用即表示你同意以上条款。'),
+          actions: [FilledButton(onPressed: () { sp.setBool('agreed', true); Navigator.pop(ctx); }, child: const Text('同意并继续'))],
+        ));
+      }
+    });
   }
 
   static String _toHex(Uint8List bytes) =>
