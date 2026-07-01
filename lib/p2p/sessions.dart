@@ -24,8 +24,10 @@ class Sessions {
     };
     session.onClearRequest = () async { entry.messages.clear(); entry.lastText = null; await MessageStore.clear(id); entry.onClear?.call(); };
     session.onDisconnect = () { onStatusChanged?.call(id, false); };
+      if (SettingsScreen.ephemeral) { entry.messages.clear(); MessageStore.clear(id).catchError((_) {}); }
     session.onPhaseChanged = (p) {
       if (p == SessionPhase.failed || p == SessionPhase.idle) onStatusChanged?.call(id, false);
+      if (SettingsScreen.ephemeral) { entry.messages.clear(); MessageStore.clear(id).catchError((_) {}); }
       if (p == SessionPhase.ready) onStatusChanged?.call(id, true);
     };
     if (session.isReady) onStatusChanged?.call(id, true);

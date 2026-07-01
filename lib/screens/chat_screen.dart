@@ -2,10 +2,13 @@
 library;
 
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io' show Platform;
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/gestures.dart';
+import 'package:image_picker/image_picker.dart';
 import '../l10n.dart';
 import '../models/message.dart';
 import '../models/peer.dart';
@@ -111,8 +114,20 @@ class _ChatScreenState extends State<ChatScreen> {
                 if (isDesktop) return Listener(onPointerDown: (e) { if (e.buttons == kSecondaryMouseButton) _showPopup(msg, e.position); }, child: bubble);
                 return GestureDetector(onLongPressStart: (d) => _showPopup(msg, d.globalPosition), child: bubble);
               })),
-        _InputBar(ctrl: _ctrl, focusNode: _focusNode, enabled: _ready, onSend: _send),
+        _InputBar(ctrl: _ctrl, focusNode: _focusNode, enabled: _ready, onSend: _send, onPickImage: _pickImage),
       ]));
+  }
+
+  Future<void> _pickImage() async {
+    if (!_ready) return;
+    final img = await ImagePicker().pickImage(source: ImageSource.gallery, imageQuality: 70);
+    if (img == null) return;
+    final bytes = await img.readAsBytes();
+    final b64 = base64.encode(bytes);
+    final id = DateTime.now().microsecondsSinceEpoch.toRadixString(36);
+    await _session!.sendBinary(bytes);
+    await Sessions.send(widget.peer, 'IMG|$b64', id: id);
+    _scrollToBottom();
   }
 
   Future<void> _send(String t) async {
@@ -146,7 +161,7 @@ class _Bubble extends StatelessWidget {
           borderRadius: BorderRadius.only(topLeft: const Radius.circular(16), topRight: const Radius.circular(16),
             bottomLeft: Radius.circular(sent ? 16 : 4), bottomRight: Radius.circular(sent ? 4 : 16))),
         child: Column(crossAxisAlignment: sent ? CrossAxisAlignment.end : CrossAxisAlignment.start, children: [
-          SelectableText(msg.text, style: TextStyle(fontSize: 15, color: sent ? cs.onPrimaryContainer : cs.onSurface)),
+          if (msg.text.startsWith('IMG|')) ClipRRect(borderRadius: BorderRadius.circular(12), child: Image.memory(base64.decode(msg.text.substring(4)), width: 200, fit: BoxFit.cover, errorBuilder: (_, __, ___) => const Icon(Icons.broken_image, size: 48))) else SelectableText(msg.text, style: TextStyle(fontSize: 15, color: sent ? cs.onPrimaryContainer : cs.onSurface)),
           const SizedBox(height: 3),
           Text('${msg.timestamp.hour.toString().padLeft(2, '0')}:${msg.timestamp.minute.toString().padLeft(2, '0')}',
             style: TextStyle(fontSize: 10, color: (sent ? cs.onPrimaryContainer : cs.onSurface).withAlpha(100))),
@@ -155,14 +170,16 @@ class _Bubble extends StatelessWidget {
 }
 
 class _InputBar extends StatelessWidget {
-  final TextEditingController ctrl; final FocusNode focusNode; final bool enabled; final void Function(String) onSend;
-  const _InputBar({required this.ctrl, required this.focusNode, required this.enabled, required this.onSend});
+  final TextEditingController ctrl; final FocusNode focusNode; final bool enabled;
+  final void Function(String) onSend; final VoidCallback? onPickImage;
+  const _InputBar({required this.ctrl, required this.focusNode, required this.enabled, required this.onSend, this.onPickImage});
   @override Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     final l = L10n.instance;
     return Container(padding: const EdgeInsets.fromLTRB(8, 4, 8, 8),
       decoration: BoxDecoration(color: cs.surface, boxShadow: [BoxShadow(color: Colors.black.withAlpha(12), blurRadius: 4, offset: const Offset(0, -1))]),
       child: SafeArea(child: Row(children: [
+        if (onPickImage != null) IconButton(icon: const Icon(Icons.image_outlined), onPressed: enabled ? onPickImage : null, tooltip: '图片'),
         Expanded(child: TextField(controller: ctrl, focusNode: focusNode, enabled: enabled,
           decoration: InputDecoration(hintText: enabled ? l.get('input_msg') : l.get('waiting'), filled: true,
             fillColor: cs.surfaceContainerHighest.withAlpha(80), border: OutlineInputBorder(borderRadius: BorderRadius.circular(24), borderSide: BorderSide.none),

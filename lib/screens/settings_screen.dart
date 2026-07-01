@@ -8,8 +8,8 @@ import '../p2p/signaling_client.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
-  static bool expBluetooth = false;
   static bool expRelay = false;
+  static bool ephemeral = false;
   @override State<SettingsScreen> createState() => _SettingsScreenState();
 }
 
@@ -54,15 +54,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
             onChanged: (v) => SignalingClient.cachedUrl = v,
           )),
         ]),
+        _section(l.lang == AppLang.zh ? '🔥 阅后即焚' : '🔥 Ephemeral', [
+          SwitchListTile(
+            title: Text(l.lang == AppLang.zh ? '断开即清除聊天记录' : 'Clear messages on disconnect'),
+            subtitle: Text(l.lang == AppLang.zh ? '任何一方断开连接后自动删除所有消息' : 'Auto-delete all messages when either side disconnects'),
+            value: SettingsScreen.ephemeral, onChanged: (v) => setState(() => SettingsScreen.ephemeral = v),
+          ),
+        ]),
         // 实验性功能
         _section(l.lang == AppLang.zh ? '🧪 实验性功能' : '🧪 Experimental', [
           SwitchListTile(
-            title: Text(l.lang == AppLang.zh ? '蓝牙发现' : 'Bluetooth Discovery'),
-            subtitle: Text(l.lang == AppLang.zh ? '通过蓝牙发现附近设备（可能不稳定）' : 'Discover nearby devices via Bluetooth (unstable)'),
-            value: SettingsScreen.expBluetooth, onChanged: (v) => setState(() => SettingsScreen.expBluetooth = v),
-          ),
-          SwitchListTile(
-            title: Text(l.lang == AppLang.zh ? '信令中继' : 'Signaling Relay'),
             subtitle: Text(l.lang == AppLang.zh ? '消息通过信令服务器中转（跨网可靠）' : 'Relay messages through signaling server (cross-network)'),
             value: SettingsScreen.expRelay, onChanged: (v) => setState(() => SettingsScreen.expRelay = v),
           ),
